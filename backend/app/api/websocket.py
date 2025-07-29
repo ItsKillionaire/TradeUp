@@ -22,3 +22,4 @@ async def websocket_endpoint(websocket: WebSocket):
         await manager.broadcast_json({"type": "chat", "message": "A client left the chat"})
     except Exception as e:
         logger.error(f"WebSocket error for {websocket.client}: {e}")
+        await manager.broadcast_json({"type": "error", "message": f"WebSocket error: {e}"})
