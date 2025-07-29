@@ -2,25 +2,30 @@ from fastapi import APIRouter, Depends
 from app.services.alpaca import AlpacaService
 from app.core.scheduler import scheduler
 from app.core.strategy_manager import StrategyManager
+from app.services.telegram import TelegramService
 
 router = APIRouter()
 
 def get_alpaca_service():
     return AlpacaService()
 
+def get_telegram_service():
+    return TelegramService()
+
 @router.post("/strategy/start/{strategy_name}/{symbol}")
-async def start_strategy(strategy_name: str, symbol: str, alpaca_service: AlpacaService = Depends(get_alpaca_service)):
+async def start_strategy(strategy_name: str, symbol: str, alpaca_service: AlpacaService = Depends(get_alpaca_service), telegram_service: TelegramService = Depends(get_telegram_service)):
     strategy_manager = StrategyManager(alpaca_service)
     strategy = strategy_manager.get_strategy(strategy_name)
     if strategy:
         scheduler.add_job(strategy.run, 'interval', minutes=1, args=[symbol, "1Min"], id=f"{strategy_name}_{symbol}", replace_existing=True)
         if not scheduler.running:
             scheduler.start()
+        await telegram_service.send_message(f"Strategy {strategy_name} started for {symbol}")
         return {"message": f"Strategy {strategy_name} started for {symbol}"}
     return {"message": f"Strategy {strategy_name} not found"}
 
 @router.post("/strategy/stop/{strategy_name}/{symbol}")
-async def stop_strategy(strategy_name: str, symbol: str):
+async def stop_strategy(strategy_name: str, symbol: str, telegram_service: TelegramService = Depends(get_telegram_service)):
     job_id = f"{strategy_name}_{symbol}"
     if scheduler.get_job(job_id):
         scheduler.remove_job(job_id)

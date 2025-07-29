@@ -1,5 +1,8 @@
 import alpaca_trade_api as tradeapi
 from config import ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL
+from app.core.connection_manager import manager
+import json
+import logging
 
 class AlpacaService:
     def __init__(self):
@@ -10,9 +13,11 @@ class AlpacaService:
             api_version='v2'
         )
 
-    def get_account_info(self):
+    async def get_account_info(self):
         try:
-            return self.api.get_account()
+            account = self.api.get_account()
+            await manager.broadcast_json({"type": "account_update", "data": account._raw})
+            return account
         except Exception as e:
             print(f"Error fetching account info: {e}")
             raise

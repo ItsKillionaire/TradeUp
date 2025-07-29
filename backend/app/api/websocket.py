@@ -15,10 +15,10 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
             logger.info(f"Received message from {websocket.client}: {data}")
-            await manager.broadcast(f"Client said: {data}")
+            await manager.broadcast_json({"type": "chat", "message": f"Client said: {data}"})
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info(f"WebSocket disconnected: {websocket.client}")
-        await manager.broadcast("A client left the chat")
+        await manager.broadcast_json({"type": "chat", "message": "A client left the chat"})
     except Exception as e:
         logger.error(f"WebSocket error for {websocket.client}: {e}")

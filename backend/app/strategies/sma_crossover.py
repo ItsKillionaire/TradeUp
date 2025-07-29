@@ -60,7 +60,7 @@ class SmaCrossover(BaseStrategy):
             message = f"Buy signal for {symbol}"
             logging.info(message)
             await self.telegram_service.send_message(message)
-            await manager.broadcast(message)
+            await manager.broadcast_json({"type": "log", "message": message})
             order = self.alpaca_service.submit_order(symbol, 1, 'buy', 'market', 'gtc')
             create_trade(self.db, symbol, order.qty, order.filled_avg_price, order.side)
             self.google_sheets_service.export_trades()
@@ -68,11 +68,11 @@ class SmaCrossover(BaseStrategy):
             message = f"Sell signal for {symbol}"
             logging.info(message)
             await self.telegram_service.send_message(message)
-            await manager.broadcast(message)
+            await manager.broadcast_json({"type": "log", "message": message})
             order = self.alpaca_service.submit_order(symbol, current_position, 'sell', 'market', 'gtc')
             create_trade(self.db, symbol, order.qty, order.filled_avg_price, order.side)
             self.google_sheets_service.export_trades()
         else:
             message = f"No signal for {symbol} or already in position"
             logging.info(message)
-            await manager.broadcast(message)
+            await manager.broadcast_json({"type": "log", "message": message})
