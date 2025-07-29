@@ -56,13 +56,20 @@ class SmaCrossover(BaseStrategy):
         current_position = self.get_position(symbol)
         logging.info(f"Current actual position for {symbol}: {current_position}")
 
-        # FORCED BUY FOR TESTING
-        if True: # Temporarily force a buy signal
-            message = f"FORCED Buy signal for {symbol}"
+        if latest_position == 1.0 and current_position == 0:
+            message = f"Buy signal for {symbol}"
             logging.info(message)
             await self.telegram_service.send_message(message)
             await manager.broadcast(message)
             order = self.alpaca_service.submit_order(symbol, 1, 'buy', 'market', 'gtc')
+            create_trade(self.db, symbol, order.qty, order.filled_avg_price, order.side)
+            self.google_sheets_service.export_trades()
+        elif latest_position == -1.0 and current_position > 0:
+            message = f"Sell signal for {symbol}"
+            logging.info(message)
+            await self.telegram_service.send_message(message)
+            await manager.broadcast(message)
+            order = self.alpaca_service.submit_order(symbol, current_position, 'sell', 'market', 'gtc')
             create_trade(self.db, symbol, order.qty, order.filled_avg_price, order.side)
             self.google_sheets_service.export_trades()
         else:
