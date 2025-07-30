@@ -1,14 +1,15 @@
-import os
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
-load_dotenv()
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
-ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
-ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
-ALPACA_BASE_URL = os.getenv("ALPACA_BASE_URL")
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+    ALPACA_API_KEY: str = Field(..., description="Alpaca API Key")
+    ALPACA_SECRET_KEY: str = Field(..., description="Alpaca Secret Key")
+    ALPACA_BASE_URL: str = Field("https://paper-api.alpaca.markets", description="Alpaca Base URL")
+    TELEGRAM_BOT_TOKEN: str | None = Field(None, description="Telegram Bot Token")
+    TELEGRAM_CHAT_ID: str | None = Field(None, description="Telegram Chat ID")
+    SECRET_KEY: str = Field("your-super-secret-key", description="Secret key for JWT. CHANGE THIS IN PRODUCTION!")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, description="Access token expiration time in minutes")
 
-print(f"ALPACA_API_KEY: {ALPACA_API_KEY}")
-print(f"ALPACA_SECRET_KEY: {ALPACA_SECRET_KEY}")
-print(f"ALPACA_BASE_URL: {ALPACA_BASE_URL}")
+settings = Settings()
