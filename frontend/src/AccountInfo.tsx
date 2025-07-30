@@ -19,41 +19,44 @@ const AccountInfo: React.FC = () => {
     }
 
     return (
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-            <Grid xs={12} sm={6} md={4}>
-                <Card>
-                    <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <ShowChart sx={{ mr: 1 }} />
-                            <Typography variant="h6">Portfolio Value</Typography>
-                        </Box>
-                        <Typography variant="h4">${account.portfolio_value}</Typography>
-                    </CardContent>
-                </Card>
+        <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" gutterBottom>Account Information</Typography>
+            <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ height: '100%' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <ShowChart sx={{ mr: 1, color: 'primary.main' }} />
+                                <Typography variant="subtitle1">Portfolio Value</Typography>
+                            </Box>
+                            <Typography variant="h5">${parseFloat(account.portfolio_value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ height: '100%' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <AttachMoney sx={{ mr: 1, color: 'primary.main' }} />
+                                <Typography variant="subtitle1">Buying Power</Typography>
+                            </Box>
+                            <Typography variant="h5">${parseFloat(account.buying_power).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ height: '100%' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <PowerSettingsNew sx={{ mr: 1, color: account.status === 'ACTIVE' ? 'success.main' : 'error.main' }} />
+                                <Typography variant="subtitle1">Status</Typography>
+                            </Box>
+                            <Typography variant="h5">{account.status}</Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
             </Grid>
-            <Grid xs={12} sm={6} md={4}>
-                <Card>
-                    <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <AttachMoney sx={{ mr: 1 }} />
-                            <Typography variant="h6">Buying Power</Typography>
-                        </Box>
-                        <Typography variant="h4">${parseFloat(account.buying_power).toFixed(2)}</Typography>
-                    </CardContent>
-                </Card>
-            </Grid>
-            <Grid xs={12} sm={6} md={4}>
-                <Card>
-                    <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <PowerSettingsNew sx={{ mr: 1 }} />
-                            <Typography variant="h6">Status</Typography>
-                        </Box>
-                        <Typography variant="h4">{account.status}</Typography>
-                    </CardContent>
-                </Card>
-            </Grid>
-        </Grid>
+        </Box>
     );
 };
 

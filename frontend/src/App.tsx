@@ -1,15 +1,16 @@
 import React from 'react';
 import Dashboard from './Dashboard';
-import { Container, CssBaseline } from '@mui/material';
+import { Container, CssBaseline, ThemeProvider } from '@mui/material';
+import theme from './Theme';
 
 function App() {
   return (
-    <div className="App">
+    <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Container>
+      <Container maxWidth="lg">
         <Dashboard />
       </Container>
-    </div>
+    </ThemeProvider>
   );
 }
 

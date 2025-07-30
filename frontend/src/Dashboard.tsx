@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import axios from 'axios';
-import { Typography, Box, Grid } from '@mui/material';
+import { Typography, Box, Grid, Paper } from '@mui/material';
 
 import Controls from './Controls';
 import { useStore } from './store';
@@ -66,17 +66,29 @@ const Dashboard: React.FC = () => {
 
     return (
         <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom>
-                Dashboard
+            <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
+                Alpaca Trading Bot
             </Typography>
-            <Controls />
-            <AccountInfo />
-            <Grid container spacing={3} sx={{ mt: 2 }}>
-                <Grid xs={12} md={6}>
-                    <Logs />
+            <Grid container spacing={3}>
+                <Grid item xs={12}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <AccountInfo />
+                    </Paper>
                 </Grid>
-                <Grid xs={12} md={6}>
-                    <TradeHistory />
+                <Grid item xs={12}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <Controls />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 300 }}>
+                        <Logs />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 300 }}>
+                        <TradeHistory />
+                    </Paper>
                 </Grid>
             </Grid>
         </Box>
