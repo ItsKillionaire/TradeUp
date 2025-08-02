@@ -5,8 +5,10 @@ from typing import Dict, Type, Any
 from sqlalchemy.orm import Session
 
 class StrategyManager:
-    def __init__(self, alpaca_service):
+    def __init__(self, alpaca_service, telegram_service, google_sheets_service):
         self.alpaca_service = alpaca_service
+        self.telegram_service = telegram_service
+        self.google_sheets_service = google_sheets_service
         self._strategy_classes: Dict[str, Type[BaseStrategy]] = {
             "sma_crossover": SmaCrossover,
             "adaptive_strategy": AdaptiveStrategy,
@@ -17,7 +19,12 @@ class StrategyManager:
         strategy_class = self._strategy_classes.get(name)
         if not strategy_class:
             return None
-        return strategy_class(self.alpaca_service, **kwargs)
+        return strategy_class(
+            self.alpaca_service, 
+            self.telegram_service, 
+            self.google_sheets_service, 
+            **kwargs
+        )
 
     def get_available_strategies(self):
         return list(self._strategy_classes.keys())

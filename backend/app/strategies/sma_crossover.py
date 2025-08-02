@@ -29,7 +29,7 @@ class SmaCrossover(BaseStrategy):
         logging.info(f"Running SMA Crossover strategy for {symbol}")
         
         # Fetch historical data
-        bars = self.alpaca_service.api.get_bars(
+        bars = self.alpaca_service.get_bars(
             symbol,
             timeframe,
             limit=self.long_window + 5

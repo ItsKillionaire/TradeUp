@@ -21,22 +21,22 @@ const Dashboard: React.FC = () => {
 
     useEffect(() => {
         axios.get('/api/account')
-            .then(response => {
+            .then((response: any) => {
                 setAccount(response.data._raw);
                 setLoadingAccount(false);
             })
-            .catch(error => {
+            .catch((error: any) => {
                 console.error('Error fetching account data:', error);
                 setErrorAccount('Failed to fetch account data.');
                 setLoadingAccount(false);
             });
 
         axios.get('/api/trades')
-            .then(response => {
+            .then((response: any) => {
                 setTrades(response.data);
                 setLoadingTrades(false);
             })
-            .catch(error => {
+            .catch((error: any) => {
                 console.error('Error fetching trades data:', error);
                 setErrorTrades('Failed to fetch trades data.');
                 setLoadingTrades(false);
@@ -81,12 +81,12 @@ const Dashboard: React.FC = () => {
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 300 }}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                         <Logs />
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 300 }}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                         <TradeHistory />
                     </Paper>
                 </Grid>

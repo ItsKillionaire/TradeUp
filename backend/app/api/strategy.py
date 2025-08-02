@@ -4,7 +4,7 @@ from app.services.alpaca import AlpacaService
 from app.core.scheduler import scheduler
 from app.core.strategy_manager import StrategyManager
 from app.services.telegram import TelegramService
-from app.dependencies import get_current_user
+from app.services.google_sheets import GoogleSheetsService
 from app.core.database import get_db
 
 router = APIRouter()
@@ -15,6 +15,9 @@ def get_alpaca_service():
 def get_telegram_service():
     return TelegramService()
 
+def get_google_sheets_service():
+    return GoogleSheetsService()
+
 @router.post("/strategy/start/{strategy_name}/{symbol}")
 async def start_strategy(
     strategy_name: str,
@@ -22,10 +25,10 @@ async def start_strategy(
     trade_percentage: float = 0.05, # New parameter
     alpaca_service: AlpacaService = Depends(get_alpaca_service),
     telegram_service: TelegramService = Depends(get_telegram_service),
-    current_user: dict = Depends(get_current_user),
+    google_sheets_service: GoogleSheetsService = Depends(get_google_sheets_service),
     db: Session = Depends(get_db)
 ):
-    strategy_manager = StrategyManager(alpaca_service)
+    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
     try:
         scheduler.add_job(
             strategy_manager.run_strategy,
@@ -46,8 +49,7 @@ async def start_strategy(
 async def stop_strategy(
     strategy_name: str,
     symbol: str,
-    telegram_service: TelegramService = Depends(get_telegram_service),
-    current_user: dict = Depends(get_current_user)
+    telegram_service: TelegramService = Depends(get_telegram_service)
 ):
     job_id = f"{strategy_name}_{symbol}"
     if scheduler.get_job(job_id):
@@ -57,10 +59,14 @@ async def stop_strategy(
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Strategy {strategy_name} not running for {symbol}")
 
 @router.get("/strategy/status")
-def get_strategy_status(current_user: dict = Depends(get_current_user)):
+def get_strategy_status():
     return {"status": "online" if scheduler.running else "offline"}
 
 @router.get("/strategy/available")
-def get_available_strategies(alpaca_service: AlpacaService = Depends(get_alpaca_service), current_user: dict = Depends(get_current_user)):
-    strategy_manager = StrategyManager(alpaca_service)
+def get_available_strategies(
+    alpaca_service: AlpacaService = Depends(get_alpaca_service),
+    telegram_service: TelegramService = Depends(get_telegram_service),
+    google_sheets_service: GoogleSheetsService = Depends(get_google_sheets_service)
+):
+    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
     return {"strategies": strategy_manager.get_available_strategies()}

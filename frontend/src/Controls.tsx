@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button, TextField, Select, MenuItem, FormControl, InputLabel, Box, Typography, Grid } from '@mui/material';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
+
+interface StartStopResponse {
+    message: string;
+    strategies: string[];
+}
 
 const Controls: React.FC = () => {
     const [symbol, setSymbol] = useState('SPY');
@@ -10,7 +15,7 @@ const Controls: React.FC = () => {
 
     useEffect(() => {
         axios.get('/api/strategy/available')
-            .then(response => {
+            .then((response: AxiosResponse<StartStopResponse>) => {
                 setAvailableStrategies(response.data.strategies);
                 if (response.data.strategies.length > 0) {
                     setStrategy(response.data.strategies[0]);
@@ -22,19 +27,19 @@ const Controls: React.FC = () => {
     }, []);
 
     const handleStart = () => {
-        axios.post(`/api/strategy/start/${strategy}/${symbol}`)
-            .then(response => {
+        axios.post<StartStopResponse>(`/api/strategy/start/${strategy}/${symbol}`)
+            .then((response: AxiosResponse<StartStopResponse>) => {
                 console.log(response.data.message);
                 setBotStatus('online');
             })
-            .catch(error => {
+            .catch((error: any) => {
                 console.error('Error starting strategy:', error);
             });
     };
 
     const handleStop = () => {
         axios.post(`/api/strategy/stop/${strategy}/${symbol}`)
-            .then(response => {
+            .then((response: AxiosResponse<StartStopResponse>) => {
                 console.log(response.data.message);
                 setBotStatus('offline');
             })
