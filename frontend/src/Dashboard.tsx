@@ -114,24 +114,24 @@ const Dashboard: React.FC = () => {
                         <Controls />
                     </Paper>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Logs />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <TradeHistory />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
                         <OpenPositions />
                     </Paper>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
                         <RecentOrders />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        <Logs />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <TradeHistory />
                     </Paper>
                 </Grid>
             </Grid>
