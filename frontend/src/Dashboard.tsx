@@ -7,16 +7,24 @@ import { useStore } from './store';
 import AccountInfo from './AccountInfo';
 import Logs from './Logs';
 import TradeHistory from './TradeHistory';
+import OpenPositions from './OpenPositions';
+import RecentOrders from './RecentOrders';
 
 const Dashboard: React.FC = () => {
     const {
         setAccount,
         addMessage,
         setTrades,
+        setPositions,
+        setOrders,
         setLoadingAccount,
         setErrorAccount,
         setLoadingTrades,
         setErrorTrades,
+        setLoadingPositions,
+        setErrorPositions,
+        setLoadingOrders,
+        setErrorOrders,
     } = useStore();
 
     useEffect(() => {
@@ -42,6 +50,28 @@ const Dashboard: React.FC = () => {
                 setLoadingTrades(false);
             });
 
+        axios.get('/api/positions')
+            .then((response: any) => {
+                setPositions(response.data);
+                setLoadingPositions(false);
+            })
+            .catch((error: any) => {
+                console.error('Error fetching positions data:', error);
+                setErrorPositions('Failed to fetch positions data.');
+                setLoadingPositions(false);
+            });
+
+        axios.get('/api/orders')
+            .then((response: any) => {
+                setOrders(response.data);
+                setLoadingOrders(false);
+            })
+            .catch((error: any) => {
+                console.error('Error fetching orders data:', error);
+                setErrorOrders('Failed to fetch orders data.');
+                setLoadingOrders(false);
+            });
+
         const ws = new WebSocket(`ws://localhost:8000/ws`);
         ws.onmessage = (event) => {
             try {
@@ -62,7 +92,7 @@ const Dashboard: React.FC = () => {
         return () => {
             ws.close();
         };
-    }, [setAccount, addMessage, setTrades, setLoadingAccount, setErrorAccount, setLoadingTrades, setErrorTrades]);
+    }, [setAccount, addMessage, setTrades, setLoadingAccount, setErrorAccount, setLoadingTrades, setErrorTrades, setPositions, setOrders, setLoadingPositions, setErrorPositions, setLoadingOrders, setErrorOrders]);
 
     return (
         <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -88,6 +118,16 @@ const Dashboard: React.FC = () => {
                 <Grid item xs={12} md={6}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                         <TradeHistory />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <OpenPositions />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <RecentOrders />
                     </Paper>
                 </Grid>
             </Grid>

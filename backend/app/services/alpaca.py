@@ -58,3 +58,19 @@ class AlpacaService:
         except Exception as e:
             logging.error(f"Error submitting order: {e}")
             raise HTTPException(status_code=500, detail=f"Error submitting order: {e}")
+
+    def get_open_positions(self):
+        try:
+            positions = self.api.list_positions()
+            return [p._raw for p in positions]
+        except Exception as e:
+            logging.error(f"Error fetching open positions: {e}")
+            raise HTTPException(status_code=500, detail=f"Error fetching open positions: {e}")
+
+    def get_orders(self):
+        try:
+            orders = self.api.list_orders(status='all', limit=100) # Fetches last 100 orders
+            return [o._raw for o in orders]
+        except Exception as e:
+            logging.error(f"Error fetching orders: {e}")
+            raise HTTPException(status_code=500, detail=f"Error fetching orders: {e}")
