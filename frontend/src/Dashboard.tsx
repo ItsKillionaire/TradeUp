@@ -100,8 +100,24 @@ const Dashboard: React.FC = () => {
 
     return (
         <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-                Alpaca Trading Bot
+            <Typography variant="h4" gutterBottom sx={{
+                mb: 4,
+                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                animation: 'fadeIn 2s ease-in-out',
+                '@keyframes fadeIn': {
+                    '0%': {
+                        opacity: 0,
+                        transform: 'translateY(-20px)'
+                    },
+                    '100%': {
+                        opacity: 1,
+                        transform: 'translateY(0)'
+                    }
+                }
+            }}>
+                TradeUp
             </Typography>
             <Grid container spacing={3}>
                 <Grid item xs={12}>
