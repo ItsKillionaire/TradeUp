@@ -5,6 +5,9 @@ from app.api import account, strategy, google_sheets, websocket, trades
 from app.core.logging import setup_logging
 from app.core.database import engine
 from app.models import trade
+import asyncio
+from app.services.alpaca import AlpacaService
+from app.core.connection_manager import manager
 
 setup_logging()
 
@@ -13,6 +16,22 @@ trade.Base.metadata.create_all(bind=engine)
 setup_logging()
 
 app = FastAPI()
+
+async def broadcast_updates():
+    alpaca_service = AlpacaService()
+    while True:
+        try:
+            positions = alpaca_service.get_open_positions()
+            orders = alpaca_service.get_orders()
+            await manager.broadcast_json({"type": "positions_update", "data": positions})
+            await manager.broadcast_json({"type": "orders_update", "data": orders})
+        except Exception as e:
+            print(f"Error broadcasting updates: {e}")
+        await asyncio.sleep(5)
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(broadcast_updates())
 
 origins = [
     "http://localhost:3000",

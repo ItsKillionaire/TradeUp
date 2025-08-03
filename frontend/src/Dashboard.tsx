@@ -78,6 +78,10 @@ const Dashboard: React.FC = () => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'account_update') {
                     setAccount(data.data._raw);
+                } else if (data.type === 'positions_update') {
+                    setPositions(data.data);
+                } else if (data.type === 'orders_update') {
+                    setOrders(data.data);
                 } else if (data.type === 'chat' || data.type === 'log' || data.type === 'error') {
                     addMessage(data.message);
                 } else {
