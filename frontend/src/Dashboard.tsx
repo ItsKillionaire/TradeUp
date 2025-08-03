@@ -130,19 +130,19 @@ const Dashboard: React.FC = () => {
                         <Controls />
                     </Paper>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={8}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
                         <OpenPositions />
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <RecentOrders />
+                        <Logs />
                     </Paper>
                 </Grid>
-                <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <Logs />
+                <Grid item xs={12}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <RecentOrders />
                     </Paper>
                 </Grid>
                 <Grid item xs={12}>
