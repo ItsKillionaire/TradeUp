@@ -44,15 +44,23 @@ class AlpacaService:
             logging.error(f"Error fetching bars: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching bars: {e}")
 
-    def submit_order(self, symbol, qty, side, type, time_in_force):
+    def submit_order(self, symbol, qty, side, type, time_in_force, order_class=None, take_profit=None, stop_loss=None):
         try:
-            order = self.api.submit_order(
-                symbol=symbol,
-                qty=qty,
-                side=side,
-                type=type,
-                time_in_force=time_in_force
-            )
+            order_data = {
+                'symbol': symbol,
+                'qty': qty,
+                'side': side,
+                'type': type,
+                'time_in_force': time_in_force,
+            }
+            if order_class:
+                order_data['order_class'] = order_class
+            if take_profit:
+                order_data['take_profit'] = take_profit
+            if stop_loss:
+                order_data['stop_loss'] = stop_loss
+
+            order = self.api.submit_order(**order_data)
             logging.info(f"Order submitted: {order}")
             return order
         except Exception as e:
@@ -62,7 +70,19 @@ class AlpacaService:
     def get_open_positions(self):
         try:
             positions = self.api.list_positions()
-            return [p._raw for p in positions]
+            orders = self.api.list_orders(status='open')
+            positions_data = []
+            for p in positions:
+                position_dict = p._raw
+                related_orders = [o for o in orders if o.symbol == p.symbol]
+                if related_orders:
+                    for o in related_orders:
+                        if hasattr(o, 'take_profit') and o.take_profit:
+                            position_dict['take_profit_price'] = o.take_profit['limit_price']
+                        if hasattr(o, 'stop_loss') and o.stop_loss:
+                            position_dict['stop_loss_price'] = o.stop_loss['stop_price']
+                positions_data.append(position_dict)
+            return positions_data
         except Exception as e:
             logging.error(f"Error fetching open positions: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching open positions: {e}")

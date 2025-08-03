@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-import numpy as np
+import pandas_ta as ta
 from app.strategies.base import BaseStrategy
 from app.services.telegram import TelegramService
 from app.services.google_sheets import GoogleSheetsService
@@ -8,11 +8,12 @@ from app.crud import create_trade
 from app.core.connection_manager import manager
 from sqlalchemy.orm import Session
 
-class SmaCrossover(BaseStrategy):
-    def __init__(self, alpaca_service, telegram_service, google_sheets_service, short_window=40, long_window=100, trade_percentage=0.05, take_profit_pct=0.05, stop_loss_pct=0.02):
+class RsiStrategy(BaseStrategy):
+    def __init__(self, alpaca_service, telegram_service, google_sheets_service, rsi_period=14, rsi_oversold=30, rsi_overbought=70, trade_percentage=0.05, take_profit_pct=0.05, stop_loss_pct=0.02):
         super().__init__(alpaca_service)
-        self.short_window = short_window
-        self.long_window = long_window
+        self.rsi_period = rsi_period
+        self.rsi_oversold = rsi_oversold
+        self.rsi_overbought = rsi_overbought
         self.trade_percentage = trade_percentage
         self.take_profit_pct = take_profit_pct
         self.stop_loss_pct = stop_loss_pct
@@ -28,41 +29,28 @@ class SmaCrossover(BaseStrategy):
             return 0.0
 
     async def run(self, symbol: str, timeframe: str, db: Session):
-        logging.info(f"Running SMA Crossover strategy for {symbol}")
+        logging.info(f"Running RSI strategy for {symbol}")
         
-        # Fetch historical data
         bars = self.alpaca_service.get_bars(
             symbol,
             timeframe,
-            limit=self.long_window + 5
+            limit=self.rsi_period + 5
         ).df
         logging.info(f"Fetched {len(bars)} bars for {symbol} with timeframe {timeframe}.")
 
-        if len(bars) < self.long_window:
+        if len(bars) < self.rsi_period:
             logging.warning(f"Not enough data for {symbol} to run strategy.")
             return
 
-        # Calculate SMAs
-        bars['short_mavg'] = bars['close'].rolling(self.short_window).mean()
-        bars['long_mavg'] = bars['close'].rolling(self.long_window).mean()
+        bars.ta.rsi(length=self.rsi_period, append=True)
 
-        # Generate signals
-        bars['signal'] = 0
-        bars.loc[bars.index[self.short_window:], 'signal'] = np.where(
-            bars['short_mavg'][self.short_window:] > bars['long_mavg'][self.short_window:], 1, 0
-        )
+        latest_rsi = bars[f'RSI_{self.rsi_period}'].iloc[-1]
+        logging.info(f"Latest RSI for {symbol}: {latest_rsi}")
 
-        bars['position'] = bars['signal'].diff()
-
-        logging.info(f"Latest signal: {bars['signal'].iloc[-1]}")
-        logging.info(f"Latest position change: {bars['position'].iloc[-1]}")
-
-        latest_position = bars['position'].iloc[-1]
         current_position = await self.get_position(symbol)
-        logging.info(f"Current actual position for {symbol}: {current_position}")
 
-        if latest_position == 1.0 and current_position == 0:
-            message = f"Buy signal for {symbol}"
+        if latest_rsi < self.rsi_oversold and current_position == 0:
+            message = f"Buy signal for {symbol} (RSI: {latest_rsi:.2f})"
             logging.info(message)
             await self.telegram_service.send_message(message)
             await manager.broadcast_json({"type": "log", "message": message})
@@ -85,8 +73,8 @@ class SmaCrossover(BaseStrategy):
                 )
                 create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
                 self.google_sheets_service.export_trades()
-        elif latest_position == -1.0 and current_position > 0:
-            message = f"Sell signal for {symbol}"
+        elif latest_rsi > self.rsi_overbought and current_position > 0:
+            message = f"Sell signal for {symbol} (RSI: {latest_rsi:.2f})"
             logging.info(message)
             await self.telegram_service.send_message(message)
             await manager.broadcast_json({"type": "log", "message": message})
@@ -94,6 +82,6 @@ class SmaCrossover(BaseStrategy):
             create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
             self.google_sheets_service.export_trades()
         else:
-            message = f"No signal for {symbol} or already in position"
+            message = f"No signal for {symbol} (RSI: {latest_rsi:.2f}) or already in position"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})

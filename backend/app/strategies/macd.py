@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-import numpy as np
+import pandas_ta as ta
 from app.strategies.base import BaseStrategy
 from app.services.telegram import TelegramService
 from app.services.google_sheets import GoogleSheetsService
@@ -8,11 +8,12 @@ from app.crud import create_trade
 from app.core.connection_manager import manager
 from sqlalchemy.orm import Session
 
-class SmaCrossover(BaseStrategy):
-    def __init__(self, alpaca_service, telegram_service, google_sheets_service, short_window=40, long_window=100, trade_percentage=0.05, take_profit_pct=0.05, stop_loss_pct=0.02):
+class MacdStrategy(BaseStrategy):
+    def __init__(self, alpaca_service, telegram_service, google_sheets_service, fast=12, slow=26, signal=9, trade_percentage=0.05, take_profit_pct=0.05, stop_loss_pct=0.02):
         super().__init__(alpaca_service)
-        self.short_window = short_window
-        self.long_window = long_window
+        self.fast = fast
+        self.slow = slow
+        self.signal = signal
         self.trade_percentage = trade_percentage
         self.take_profit_pct = take_profit_pct
         self.stop_loss_pct = stop_loss_pct
@@ -28,41 +29,29 @@ class SmaCrossover(BaseStrategy):
             return 0.0
 
     async def run(self, symbol: str, timeframe: str, db: Session):
-        logging.info(f"Running SMA Crossover strategy for {symbol}")
+        logging.info(f"Running MACD strategy for {symbol}")
         
-        # Fetch historical data
         bars = self.alpaca_service.get_bars(
             symbol,
             timeframe,
-            limit=self.long_window + 5
+            limit=self.slow + 5
         ).df
         logging.info(f"Fetched {len(bars)} bars for {symbol} with timeframe {timeframe}.")
 
-        if len(bars) < self.long_window:
+        if len(bars) < self.slow:
             logging.warning(f"Not enough data for {symbol} to run strategy.")
             return
 
-        # Calculate SMAs
-        bars['short_mavg'] = bars['close'].rolling(self.short_window).mean()
-        bars['long_mavg'] = bars['close'].rolling(self.long_window).mean()
+        bars.ta.macd(fast=self.fast, slow=self.slow, signal=self.signal, append=True)
 
-        # Generate signals
-        bars['signal'] = 0
-        bars.loc[bars.index[self.short_window:], 'signal'] = np.where(
-            bars['short_mavg'][self.short_window:] > bars['long_mavg'][self.short_window:], 1, 0
-        )
+        latest_macd = bars[f'MACD_{self.fast}_{self.slow}_{self.signal}'].iloc[-1]
+        latest_signal = bars[f'MACDs_{self.fast}_{self.slow}_{self.signal}'].iloc[-1]
+        logging.info(f"Latest MACD for {symbol}: {latest_macd:.2f}, Signal: {latest_signal:.2f}")
 
-        bars['position'] = bars['signal'].diff()
-
-        logging.info(f"Latest signal: {bars['signal'].iloc[-1]}")
-        logging.info(f"Latest position change: {bars['position'].iloc[-1]}")
-
-        latest_position = bars['position'].iloc[-1]
         current_position = await self.get_position(symbol)
-        logging.info(f"Current actual position for {symbol}: {current_position}")
 
-        if latest_position == 1.0 and current_position == 0:
-            message = f"Buy signal for {symbol}"
+        if latest_macd > latest_signal and current_position == 0:
+            message = f"Buy signal for {symbol} (MACD cross)"
             logging.info(message)
             await self.telegram_service.send_message(message)
             await manager.broadcast_json({"type": "log", "message": message})
@@ -85,8 +74,8 @@ class SmaCrossover(BaseStrategy):
                 )
                 create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
                 self.google_sheets_service.export_trades()
-        elif latest_position == -1.0 and current_position > 0:
-            message = f"Sell signal for {symbol}"
+        elif latest_macd < latest_signal and current_position > 0:
+            message = f"Sell signal for {symbol} (MACD cross)"
             logging.info(message)
             await self.telegram_service.send_message(message)
             await manager.broadcast_json({"type": "log", "message": message})
@@ -94,6 +83,6 @@ class SmaCrossover(BaseStrategy):
             create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
             self.google_sheets_service.export_trades()
         else:
-            message = f"No signal for {symbol} or already in position"
+            message = f"No signal for {symbol} (MACD cross) or already in position"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})

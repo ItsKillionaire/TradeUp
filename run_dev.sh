@@ -37,5 +37,5 @@ echo "--- Starting Backend and Frontend Services ---"
 npx concurrently \
   --names "BACKEND,FRONTEND" \
   --prefix-colors "bgBlue.bold,bgMagenta.bold" \
-  "cd '$BACKEND_DIR' && ./.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000" \
+  "cd '$BACKEND_DIR' && source ./.venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000" \
   "npm start"
