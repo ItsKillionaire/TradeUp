@@ -44,15 +44,23 @@ class AlpacaService:
             logging.error(f"Error fetching bars: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching bars: {e}")
 
-    def submit_order(self, symbol, qty, side, type, time_in_force, order_class=None, take_profit=None, stop_loss=None):
+    def submit_order(self, symbol, side, type, time_in_force, qty=None, notional=None, order_class=None, take_profit=None, stop_loss=None):
         try:
+            if not qty and not notional:
+                raise ValueError("Either 'qty' or 'notional' must be provided.")
+            if qty and notional:
+                raise ValueError("Provide 'qty' or 'notional', not both.")
+
             order_data = {
                 'symbol': symbol,
-                'qty': qty,
                 'side': side,
                 'type': type,
                 'time_in_force': time_in_force,
             }
+            if qty:
+                order_data['qty'] = qty
+            if notional:
+                order_data['notional'] = notional
             if order_class:
                 order_data['order_class'] = order_class
             if take_profit:

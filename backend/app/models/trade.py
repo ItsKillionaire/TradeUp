@@ -10,3 +10,6 @@ class Trade(Base):
     price = Column(Float)
     side = Column(String)
     timestamp = Column(DateTime)
+    strategy = Column(String, nullable=True)
+    entry_reason = Column(String, nullable=True)
+    exit_reason = Column(String, nullable=True)

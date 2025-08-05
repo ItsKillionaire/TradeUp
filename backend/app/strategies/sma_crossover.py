@@ -54,46 +54,92 @@ class SmaCrossover(BaseStrategy):
 
         bars['position'] = bars['signal'].diff()
 
-        logging.info(f"Latest signal: {bars['signal'].iloc[-1]}")
-        logging.info(f"Latest position change: {bars['position'].iloc[-1]}")
-
         latest_position = bars['position'].iloc[-1]
-        current_position = await self.get_position(symbol)
-        logging.info(f"Current actual position for {symbol}: {current_position}")
+        current_position_qty = await self.get_position(symbol)
+        logging.info(f"Current position for {symbol}: {current_position_qty} shares.")
 
-        if latest_position == 1.0 and current_position == 0:
-            message = f"Buy signal for {symbol}"
-            logging.info(message)
-            await self.telegram_service.send_message(message)
-            await manager.broadcast_json({"type": "log", "message": message})
+        short_mavg = bars['short_mavg'].iloc[-1]
+        long_mavg = bars['long_mavg'].iloc[-1]
 
+        if latest_position == 1.0 and current_position_qty == 0:
             account_info = await self.alpaca_service.get_account_info()
             buying_power = float(account_info.buying_power)
+            notional_to_trade = buying_power * self.trade_percentage
             last_price = bars['close'].iloc[-1]
-            qty = int((buying_power * self.trade_percentage) / last_price)
 
-            if qty > 0:
-                order = self.alpaca_service.submit_order(
-                    symbol=symbol, 
-                    qty=qty, 
-                    side='buy', 
-                    type='market', 
-                    time_in_force='gtc',
-                    order_class='bracket',
-                    take_profit={'limit_price': last_price * (1 + self.take_profit_pct)},
-                    stop_loss={'stop_price': last_price * (1 - self.stop_loss_pct)}
-                )
-                create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
-                self.google_sheets_service.export_trades()
-        elif latest_position == -1.0 and current_position > 0:
-            message = f"Sell signal for {symbol}"
+            message = (
+                f"TRADE SIGNAL: Buy {symbol}.\n"
+                f"Reason: SMA Crossover (Short {self.short_window} SMA crossed above Long {self.long_window} SMA).\n"
+                f"  - Short SMA: {short_mavg:.2f}\n"
+                f"  - Long SMA: {long_mavg:.2f}\n"
+                f"  - Current Price: {last_price:.2f}\n"
+                f"  - Account Buying Power: ${buying_power:,.2f}\n"
+                f"  - Position Size (Notional): ${notional_to_trade:,.2f} ({self.trade_percentage:.1%} of buying power).\n"
+                f"Exit Plan:\n"
+                f"  - Take Profit Target: ${last_price * (1 + self.take_profit_pct):.2f} (+{self.take_profit_pct:.1%})\n"
+                f"  - Stop Loss Target: ${last_price * (1 - self.stop_loss_pct):.2f} (-{self.stop_loss_pct:.1%})"
+            )
             logging.info(message)
             await self.telegram_service.send_message(message)
             await manager.broadcast_json({"type": "log", "message": message})
-            order = self.alpaca_service.submit_order(symbol, current_position, 'sell', 'market', 'gtc')
-            create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
+
+            if notional_to_trade > 1.0: # Alpaca requires notional orders to be > $1
+                order = self.alpaca_service.submit_order(
+                    symbol=symbol,
+                    notional=notional_to_trade,
+                    side='buy',
+                    type='market',
+                    time_in_force='day', # Day order is safer for this strategy
+                    order_class='bracket',
+                    take_profit={'limit_price': round(last_price * (1 + self.take_profit_pct), 2)},
+                    stop_loss={'stop_price': round(last_price * (1 - self.stop_loss_pct), 2)}
+                )
+                # Since we don't get immediate fill info on market orders, we'll log the submission.
+                # A separate process should monitor fills.
+                create_trade(
+                    db, 
+                    symbol=symbol, 
+                    qty=order.qty or 0, 
+                    price=order.filled_avg_price or last_price, # Use last_price as estimate
+                    side=order.side, 
+                    strategy='SMA Crossover',
+                    entry_reason=f"Short SMA ({short_mavg:.2f}) crossed above Long SMA ({long_mavg:.2f})"
+                )
+                self.google_sheets_service.export_trades()
+
+        elif latest_position == -1.0 and current_position_qty > 0:
+            message = (
+                f"TRADE SIGNAL: Sell {symbol}.\n"
+                f"Reason: SMA Crossover (Short {self.short_window} SMA crossed below Long {self.long_window} SMA).\n"
+                f"  - Short SMA: {short_mavg:.2f}\n"
+                f"  - Long SMA: {long_mavg:.2f}\n"
+                f"Closing position of {current_position_qty} shares."
+            )
+            logging.info(message)
+            await self.telegram_service.send_message(message)
+            await manager.broadcast_json({"type": "log", "message": message})
+            
+            # We cancel existing bracket orders and sell the full position
+            self.alpaca_service.api.cancel_all_orders()
+            order = self.alpaca_service.submit_order(
+                symbol=symbol, 
+                qty=current_position_qty, 
+                side='sell', 
+                type='market', 
+                time_in_force='day'
+            )
+            create_trade(
+                db, 
+                symbol=symbol, 
+                qty=order.qty or current_position_qty, 
+                price=order.filled_avg_price or bars['close'].iloc[-1], # Estimate
+                side=order.side, 
+                strategy='SMA Crossover',
+                entry_reason="", # Not an entry
+                exit_reason=f"Short SMA ({short_mavg:.2f}) crossed below Long SMA ({long_mavg:.2f})"
+            )
             self.google_sheets_service.export_trades()
         else:
-            message = f"No signal for {symbol} or already in position"
+            message = f"No signal for {symbol} or position is aligned with signal. Short SMA: {short_mavg:.2f}, Long SMA: {long_mavg:.2f}"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
