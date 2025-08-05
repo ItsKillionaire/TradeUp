@@ -1,3 +1,4 @@
+import asyncio
 import alpaca_trade_api as tradeapi
 from alpaca_trade_api.stream import Stream
 from config import settings
@@ -124,4 +125,4 @@ class AlpacaService:
             await strategy_manager.run_strategy_on_trade(trade)
 
         self.stream.subscribe_trades(trade_handler, '*')
-        await self.stream.run()
+        asyncio.create_task(self.stream.run())
