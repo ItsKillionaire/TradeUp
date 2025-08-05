@@ -29,51 +29,54 @@ const Dashboard: React.FC = () => {
     } = useStore();
 
     useEffect(() => {
-        axios.get('/api/account')
-            .then((response: any) => {
-                setAccount(response.data._raw);
-                setLoadingAccount(false);
-            })
-            .catch((error: any) => {
-                console.error('Error fetching account data:', error);
-                setErrorAccount('Failed to fetch account data.');
-                setLoadingAccount(false);
-            });
-
-        axios.get('/api/trades')
-            .then((response: any) => {
-                setTrades(response.data);
-                setLoadingTrades(false);
-            })
-            .catch((error: any) => {
-                console.error('Error fetching trades data:', error);
-                setErrorTrades('Failed to fetch trades data.');
-                setLoadingTrades(false);
-            });
-
-        axios.get('/api/positions')
-            .then((response: any) => {
-                setPositions(response.data);
-                setLoadingPositions(false);
-            })
-            .catch((error: any) => {
-                console.error('Error fetching positions data:', error);
-                setErrorPositions('Failed to fetch positions data.');
-                setLoadingPositions(false);
-            });
-
-        axios.get('/api/orders')
-            .then((response: any) => {
-                setOrders(response.data);
-                setLoadingOrders(false);
-            })
-            .catch((error: any) => {
-                console.error('Error fetching orders data:', error);
-                setErrorOrders('Failed to fetch orders data.');
-                setLoadingOrders(false);
-            });
-
         const ws = new WebSocket(`ws://localhost:8000/ws`);
+
+        ws.onopen = () => {
+            axios.get('/api/account')
+                .then((response: any) => {
+                    setAccount(response.data._raw);
+                    setLoadingAccount(false);
+                })
+                .catch((error: any) => {
+                    console.error('Error fetching account data:', error);
+                    setErrorAccount('Failed to fetch account data.');
+                    setLoadingAccount(false);
+                });
+
+            axios.get('/api/trades')
+                .then((response: any) => {
+                    setTrades(response.data);
+                    setLoadingTrades(false);
+                })
+                .catch((error: any) => {
+                    console.error('Error fetching trades data:', error);
+                    setErrorTrades('Failed to fetch trades data.');
+                    setLoadingTrades(false);
+                });
+
+            axios.get('/api/positions')
+                .then((response: any) => {
+                    setPositions(response.data);
+                    setLoadingPositions(false);
+                })
+                .catch((error: any) => {
+                    console.error('Error fetching positions data:', error);
+                    setErrorPositions('Failed to fetch positions data.');
+                    setLoadingPositions(false);
+                });
+
+            axios.get('/api/orders')
+                .then((response: any) => {
+                    setOrders(response.data);
+                    setLoadingOrders(false);
+                })
+                .catch((error: any) => {
+                    console.error('Error fetching orders data:', error);
+                    setErrorOrders('Failed to fetch orders data.');
+                    setLoadingOrders(false);
+                });
+        };
+
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);

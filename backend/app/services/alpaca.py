@@ -21,7 +21,7 @@ class AlpacaService:
         self.data_api = tradeapi.REST(
             key_id=settings.ALPACA_API_KEY,
             secret_key=settings.ALPACA_SECRET_KEY,
-            base_url="https://paper-api.alpaca.markets", # Always use paper for data in this context
+            base_url=settings.ALPACA_BASE_URL,
             api_version='v2'
         )
 
@@ -125,4 +125,4 @@ class AlpacaService:
             await strategy_manager.run_strategy_on_trade(trade)
 
         self.stream.subscribe_trades(trade_handler, '*')
-        asyncio.create_task(self.stream.run())
+        asyncio.create_task(self.stream._run_forever())
