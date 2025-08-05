@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.services.alpaca import AlpacaService
-from app.core.scheduler import scheduler
 from app.core.strategy_manager import StrategyManager
 from app.services.telegram import TelegramService
 from app.services.google_sheets import GoogleSheetsService
@@ -18,29 +17,28 @@ def get_telegram_service():
 def get_google_sheets_service():
     return GoogleSheetsService()
 
+strategy_manager = None
+
+@router.on_event("startup")
+async def startup_event():
+    global strategy_manager
+    alpaca_service = AlpacaService()
+    telegram_service = TelegramService()
+    google_sheets_service = GoogleSheetsService()
+    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
+    await alpaca_service.start_stream(strategy_manager)
+
 @router.post("/strategy/start/{strategy_name}/{symbol}")
 async def start_strategy(
     strategy_name: str,
     symbol: str,
     trade_percentage: float = 0.05, # New parameter
-    alpaca_service: AlpacaService = Depends(get_alpaca_service),
-    telegram_service: TelegramService = Depends(get_telegram_service),
-    google_sheets_service: GoogleSheetsService = Depends(get_google_sheets_service),
     db: Session = Depends(get_db)
 ):
-    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
     try:
-        scheduler.add_job(
-            strategy_manager.run_strategy,
-            'interval',
-            minutes=1,
-            args=[strategy_name, symbol, "1Min", db, {"trade_percentage": trade_percentage}], # Pass db session and strategy params
-            id=f"{strategy_name}_{symbol}",
-            replace_existing=True
-        )
-        if not scheduler.running:
-            scheduler.start()
-        await telegram_service.send_message(f"Strategy {strategy_name} started for {symbol}")
+        strategy_instance = strategy_manager.get_strategy_instance(strategy_name, symbol=symbol, trade_percentage=trade_percentage, db=db)
+        strategy_manager.active_strategies.append(strategy_instance)
+        await strategy_manager.telegram_service.send_message(f"Strategy {strategy_name} started for {symbol}")
         return {"message": f"Strategy {strategy_name} started for {symbol}"}
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -49,24 +47,15 @@ async def start_strategy(
 async def stop_strategy(
     strategy_name: str,
     symbol: str,
-    telegram_service: TelegramService = Depends(get_telegram_service)
 ):
-    job_id = f"{strategy_name}_{symbol}"
-    if scheduler.get_job(job_id):
-        scheduler.remove_job(job_id)
-        await telegram_service.send_message(f"Strategy {strategy_name} stopped for {symbol}")
-        return {"message": f"Strategy {strategy_name} stopped for {symbol}"}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Strategy {strategy_name} not running for {symbol}")
+    strategy_manager.active_strategies = [s for s in strategy_manager.active_strategies if not (s.name == strategy_name and s.symbol == symbol)]
+    await strategy_manager.telegram_service.send_message(f"Strategy {strategy_name} stopped for {symbol}")
+    return {"message": f"Strategy {strategy_name} stopped for {symbol}"}
 
 @router.get("/strategy/status")
 def get_strategy_status():
-    return {"status": "online" if scheduler.running else "offline"}
+    return {"status": "online"}
 
 @router.get("/strategy/available")
-def get_available_strategies(
-    alpaca_service: AlpacaService = Depends(get_alpaca_service),
-    telegram_service: TelegramService = Depends(get_telegram_service),
-    google_sheets_service: GoogleSheetsService = Depends(get_google_sheets_service)
-):
-    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
+def get_available_strategies():
     return {"strategies": strategy_manager.get_available_strategies()}

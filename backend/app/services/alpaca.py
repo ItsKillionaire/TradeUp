@@ -1,4 +1,5 @@
 import alpaca_trade_api as tradeapi
+from alpaca_trade_api.stream import Stream
 from config import settings
 from app.core.connection_manager import manager
 from fastapi import HTTPException
@@ -109,3 +110,18 @@ class AlpacaService:
         except Exception as e:
             logging.error(f"Error fetching clock: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching clock: {e}")
+
+    async def start_stream(self, strategy_manager):
+        self.stream = Stream(
+            key_id=settings.ALPACA_API_KEY,
+            secret_key=settings.ALPACA_SECRET_KEY,
+            base_url=settings.ALPACA_BASE_URL,
+            data_feed='iex'
+        )
+
+        async def trade_handler(trade):
+            logging.info(f"Received trade: {trade}")
+            await strategy_manager.run_strategy_on_trade(trade)
+
+        self.stream.subscribe_trades(trade_handler, '*')
+        await self.stream.run()

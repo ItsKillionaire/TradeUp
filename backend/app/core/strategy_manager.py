@@ -19,6 +19,10 @@ class StrategyManager:
         self.alpaca_service = alpaca_service
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
+        self.active_strategies = []
+        self.alpaca_service = alpaca_service
+        self.telegram_service = telegram_service
+        self.google_sheets_service = google_sheets_service
         self._strategy_classes: Dict[str, Dict[str, Any]] = {
             "sma_crossover": {
                 "class": SmaCrossover,
@@ -110,3 +114,12 @@ class StrategyManager:
             await strategy_instance.run(symbol, timeframe, db)
         else:
             raise ValueError(f"Strategy '{name}' not found.")
+
+    async def run_strategy_on_trade(self, trade):
+        # This is a simplified example. In a real application, you would
+        # have a way to map a trade to a specific strategy instance.
+        # For now, we'll just run all active strategies for the symbol.
+        active_strategies = [] # You would need to implement a way to get active strategies
+        for strategy in active_strategies:
+            if strategy.symbol == trade.symbol:
+                await strategy.run_on_trade(trade)

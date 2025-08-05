@@ -1,6 +1,7 @@
 import logging
 import pandas as pd
 import pandas_ta as ta
+from sqlalchemy.orm import Session
 from app.strategies.base import BaseStrategy
 from app.services.telegram import TelegramService
 from app.services.google_sheets import GoogleSheetsService
@@ -28,7 +29,12 @@ class RsiStrategy(BaseStrategy):
             logging.warning(f"Could not get position for {symbol}: {e}")
             return 0.0
 
-    async def run(self, symbol: str, timeframe: str, db: Session):
+    async def run(self, symbol, timeframe, db: Session):
+        pass
+
+    async def run_on_trade(self, trade):
+        # Implement real-time logic here
+        pass
         logging.info(f"Running RSI strategy for {symbol}")
         
         bars = self.alpaca_service.get_bars(

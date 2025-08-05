@@ -8,3 +8,7 @@ class BaseStrategy(ABC):
     @abstractmethod
     def run(self, symbol: str, timeframe: str):
         pass
+
+    @abstractmethod
+    async def run_on_trade(self, trade):
+        pass
