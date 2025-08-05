@@ -1,56 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, fetchMarketStatus } from './store';
+import axios from 'axios';
+import { Typography, Box, Paper } from '@mui/material';
+import { styled } from '@mui/material/styles';
+
+const StatusIndicator = styled(Box)<{ open: boolean }>(({ theme, open }) => ({
+  width: 20,
+  height: 20,
+  borderRadius: '50%',
+  backgroundColor: open ? theme.palette.success.main : theme.palette.error.main,
+  boxShadow: `0 0 10px ${open ? theme.palette.success.main : theme.palette.error.main}`,
+  marginRight: theme.spacing(2),
+}));
 
 const MarketStatus: React.FC = () => {
-  const { marketStatus, loadingMarketStatus, errorMarketStatus } = useStore();
-  const [countdown, setCountdown] = useState<string>('');
+  const [marketStatus, setMarketStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMarketStatus();
+    axios.get('/api/market/status')
+      .then(response => {
+        setMarketStatus(response.data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching market status:', error);
+        setError('Failed to fetch market status.');
+        setLoading(false);
+      });
   }, []);
 
-  useEffect(() => {
-    if (!marketStatus) return;
+  const renderStatus = () => {
+    if (loading) {
+      return <Typography>Loading market status...</Typography>;
+    }
 
-    const calculateCountdown = () => {
-      const targetTime = new Date(marketStatus.is_open ? marketStatus.next_close : marketStatus.next_open).getTime();
-      const now = new Date().getTime();
-      const distance = targetTime - now;
+    if (error) {
+      return <Typography color="error">{error}</Typography>;
+    }
 
-      if (distance < 0) {
-        setCountdown('Now');
-        return;
-      }
+    if (marketStatus) {
+      const nextEventTime = marketStatus.is_open ? marketStatus.next_close : marketStatus.next_open;
+      const nextEventLabel = marketStatus.is_open ? 'closes' : 'opens';
+      
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <StatusIndicator open={marketStatus.is_open} />
+          <Box>
+            <Typography variant="h6">
+              Market is {marketStatus.is_open ? 'Open' : 'Closed'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Next market event: {nextEventLabel} at {new Date(nextEventTime).toLocaleString()}
+            </Typography>
+          </Box>
+        </Box>
+      );
+    }
 
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-      setCountdown(`${hours}h ${minutes}m ${seconds}s`);
-    };
-
-    const interval = setInterval(calculateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [marketStatus]);
-
-  if (loadingMarketStatus) {
-    return <div>Loading market status...</div>;
-  }
-
-  if (errorMarketStatus) {
-    return <div>Error: {errorMarketStatus}</div>;
-  }
-
-  if (!marketStatus) {
-    return <div>No market status available.</div>;
-  }
+    return null;
+  };
 
   return (
-    <div>
-      <h2>Market Status</h2>
-      <p>Status: {marketStatus.is_open ? 'Open' : 'Closed'}</p>
-      <p>{marketStatus.is_open ? 'Closes in' : 'Opens in'}: {countdown}</p>
-    </div>
+    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+      {renderStatus()}
+    </Paper>
   );
 };
 

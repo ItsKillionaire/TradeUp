@@ -9,6 +9,7 @@ import Logs from './Logs';
 import TradeHistory from './TradeHistory';
 import OpenPositions from './OpenPositions';
 import RecentOrders from './RecentOrders';
+import MarketStatus from './MarketStatus';
 
 const Dashboard: React.FC = () => {
     const {
@@ -120,6 +121,11 @@ const Dashboard: React.FC = () => {
                 TradeUp
             </Typography>
             <Grid container spacing={3}>
+                <Grid item xs={12}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <MarketStatus />
+                    </Paper>
+                </Grid>
                 <Grid item xs={12}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                         <AccountInfo />

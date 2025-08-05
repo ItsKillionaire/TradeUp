@@ -102,3 +102,10 @@ class AlpacaService:
         except Exception as e:
             logging.error(f"Error fetching orders: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching orders: {e}")
+
+    def get_clock(self):
+        try:
+            return self.api.get_clock()
+        except Exception as e:
+            logging.error(f"Error fetching clock: {e}")
+            raise HTTPException(status_code=500, detail=f"Error fetching clock: {e}")
