@@ -17,8 +17,9 @@ setup_logging()
 
 app = FastAPI()
 
+alpaca_service = AlpacaService()
+
 async def broadcast_updates():
-    alpaca_service = AlpacaService()
     while True:
         try:
             positions = alpaca_service.get_open_positions()
