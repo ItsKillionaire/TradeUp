@@ -19,15 +19,6 @@ def get_google_sheets_service():
 
 strategy_manager = None
 
-@router.on_event("startup")
-async def startup_event():
-    global strategy_manager
-    alpaca_service = AlpacaService()
-    telegram_service = TelegramService()
-    google_sheets_service = GoogleSheetsService()
-    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
-    await alpaca_service.start_stream(strategy_manager)
-
 @router.post("/strategy/start/{strategy_name}/{symbol}")
 async def start_strategy(
     strategy_name: str,
