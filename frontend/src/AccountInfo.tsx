@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, Typography, Box, CircularProgress, Grid, Paper } from '@mui/material';
+import { Typography, Box, CircularProgress, Grid, Paper } from '@mui/material';
 import { AccountBalanceWallet, BarChart, Power, TrendingUp, TrendingDown } from '@mui/icons-material';
 import { useStore } from './store';
 

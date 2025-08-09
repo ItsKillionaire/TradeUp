@@ -30,9 +30,15 @@ class AlpacaService:
             account = self.api.get_account()
             await manager.broadcast_json({"type": "account_update", "data": account._raw})
             return account
-        except Exception as e:
+        except tradeapi.rest.APIError as e:
+            if e.status_code == 403:
+                logging.warning("Alpaca API keys are invalid or missing. Please check your .env file.")
+                return None
             logging.error(f"Error fetching account info: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching account info: {e}")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred while fetching account info: {e}")
+            raise HTTPException(status_code=500, detail=f"An unexpected error occurred while fetching account info: {e}")
 
     def get_bars(self, symbol, timeframe, limit):
         try:
@@ -93,24 +99,42 @@ class AlpacaService:
                             position_dict['stop_loss_price'] = o.stop_loss['stop_price']
                 positions_data.append(position_dict)
             return positions_data
-        except Exception as e:
+        except tradeapi.rest.APIError as e:
+            if e.status_code == 403:
+                logging.warning("Alpaca API keys are invalid or missing. Please check your .env file.")
+                return []
             logging.error(f"Error fetching open positions: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching open positions: {e}")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred while fetching open positions: {e}")
+            raise HTTPException(status_code=500, detail=f"An unexpected error occurred while fetching open positions: {e}")
 
     def get_orders(self):
         try:
             orders = self.api.list_orders(status='all', limit=100) # Fetches last 100 orders
             return [o._raw for o in orders]
-        except Exception as e:
+        except tradeapi.rest.APIError as e:
+            if e.status_code == 403:
+                logging.warning("Alpaca API keys are invalid or missing. Please check your .env file.")
+                return []
             logging.error(f"Error fetching orders: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching orders: {e}")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred while fetching orders: {e}")
+            raise HTTPException(status_code=500, detail=f"An unexpected error occurred while fetching orders: {e}")
 
     def get_clock(self):
         try:
             return self.api.get_clock()
-        except Exception as e:
+        except tradeapi.rest.APIError as e:
+            if e.status_code == 403:
+                logging.warning("Alpaca API keys are invalid or missing. Please check your .env file.")
+                return None
             logging.error(f"Error fetching clock: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching clock: {e}")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred while fetching clock: {e}")
+            raise HTTPException(status_code=500, detail=f"An unexpected error occurred while fetching clock: {e}")
 
     async def start_stream(self, strategy_manager):
         self.stream = Stream(

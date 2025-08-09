@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.services.alpaca import AlpacaService
 from app.core.strategy_manager import StrategyManager
@@ -17,15 +17,15 @@ def get_telegram_service():
 def get_google_sheets_service():
     return GoogleSheetsService()
 
-strategy_manager = None
-
 @router.post("/strategy/start/{strategy_name}/{symbol}")
 async def start_strategy(
+    request: Request,
     strategy_name: str,
     symbol: str,
     trade_percentage: float = 0.05, # New parameter
     db: Session = Depends(get_db)
 ):
+    strategy_manager = request.app.state.strategy_manager
     try:
         strategy_instance = strategy_manager.get_strategy_instance(strategy_name, symbol=symbol, trade_percentage=trade_percentage, db=db)
         strategy_manager.active_strategies.append(strategy_instance)
@@ -36,9 +36,11 @@ async def start_strategy(
 
 @router.post("/strategy/stop/{strategy_name}/{symbol}")
 async def stop_strategy(
+    request: Request,
     strategy_name: str,
     symbol: str,
 ):
+    strategy_manager = request.app.state.strategy_manager
     strategy_manager.active_strategies = [s for s in strategy_manager.active_strategies if not (s.name == strategy_name and s.symbol == symbol)]
     await strategy_manager.telegram_service.send_message(f"Strategy {strategy_name} stopped for {symbol}")
     return {"message": f"Strategy {strategy_name} stopped for {symbol}"}
@@ -48,5 +50,6 @@ def get_strategy_status():
     return {"status": "online"}
 
 @router.get("/strategy/available")
-def get_available_strategies():
+def get_available_strategies(request: Request):
+    strategy_manager = request.app.state.strategy_manager
     return {"strategies": strategy_manager.get_available_strategies()}

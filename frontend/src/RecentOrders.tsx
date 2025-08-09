@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from './store';
-import { Typography, Box, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Typography, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const RecentOrders: React.FC = () => {
     const { orders, loadingOrders, errorOrders } = useStore();

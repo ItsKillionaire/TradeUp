@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, TextField, Select, MenuItem, FormControl, InputLabel, Box, Typography, Grid, IconButton, Tooltip } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
 
 interface Strategy {
     name: string;

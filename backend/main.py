@@ -34,12 +34,11 @@ async def broadcast_updates():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_updates())
-    global strategy_manager
     alpaca_service = AlpacaService()
     telegram_service = TelegramService()
     google_sheets_service = GoogleSheetsService()
-    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
-    await alpaca_service.start_stream(strategy_manager)
+    app.state.strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
+    await alpaca_service.start_stream(app.state.strategy_manager)
 
 origins = [
     "http://localhost:3000",

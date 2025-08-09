@@ -12,13 +12,13 @@ PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 
+# --- Prerequisite Checks ---
 if [ ! -f "$BACKEND_DIR/.env" ]; then
     echo "Error: .env file not found in backend directory."
     echo "Please create a .env file in the backend directory with your Alpaca API keys."
     exit 1
 fi
 
-# --- Prerequisite Checks ---
 if [ ! -f "$BACKEND_DIR/.venv/bin/python" ]; then
     echo "Error: Backend python virtual environment not found."
     echo "Please run the setup script or create it manually."
@@ -45,3 +45,4 @@ npx concurrently \
   --prefix-colors "bgBlue.bold,bgMagenta.bold" \
   "cd '$BACKEND_DIR' && source ./.venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000" \
   "npm start"
+
