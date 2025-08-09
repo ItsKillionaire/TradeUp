@@ -51,7 +51,7 @@ def test_submit_order_success(alpaca_service, mock_alpaca_api):
     mock_order = MagicMock()
     mock_alpaca_api.submit_order.return_value = mock_order
 
-    order = alpaca_service.submit_order("SPY", 10, "buy", "market", "gtc")
+    order = alpaca_service.submit_order(symbol="SPY", qty=10, side="buy", type="market", time_in_force="gtc")
 
     mock_alpaca_api.submit_order.assert_called_once_with(
         symbol="SPY",

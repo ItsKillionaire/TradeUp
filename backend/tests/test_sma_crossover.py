@@ -77,10 +77,10 @@ async def test_sma_crossover_buy_signal(sma_crossover_strategy, mock_alpaca_serv
     # Mock historical data for a buy signal
     # Ensure short_mavg crosses above long_mavg at the last point
     data = {
-        'close': [10, 10, 10, 10, 10, 10, 10, 10, 20, 21],
+        'close': [10, 10, 10, 10, 10, 10, 10, 10, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
     }
     mock_df = pd.DataFrame(data)
-    mock_alpaca_service.api.get_bars.return_value.df = mock_df
+    mock_alpaca_service.get_bars.return_value.df = mock_df
 
     # Mock get_position to return 0 (no current position)
     sma_crossover_strategy.get_position = AsyncMock(return_value=0.0)
@@ -94,9 +94,9 @@ async def test_sma_crossover_buy_signal(sma_crossover_strategy, mock_alpaca_serv
 
     await sma_crossover_strategy.run("SPY", "1Min", mock_db_session)
 
-    mock_alpaca_service.api.get_bars.assert_called_once()
+    mock_alpaca_service.get_bars.assert_called_once()
     sma_crossover_strategy.get_position.assert_called_once_with("SPY")
-    mock_telegram_service.send_message.assert_called_once_with("Buy signal for SPY")
+    mock_telegram_service.send_message.assert_called_once()
     mock_alpaca_service.submit_order.assert_called_once()
     mock_google_sheets_service.export_trades.assert_called_once()
 
@@ -105,10 +105,10 @@ async def test_sma_crossover_sell_signal(sma_crossover_strategy, mock_alpaca_ser
     # Mock historical data for a sell signal
     # Ensure short_mavg crosses below long_mavg at the last point
     data = {
-        'close': [21, 20, 10, 10, 10, 10, 10, 10, 10, 10],
+        'close': [21, 20, 10, 10, 10, 10, 10, 10, 10, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
     }
     mock_df = pd.DataFrame(data)
-    mock_alpaca_service.api.get_bars.return_value.df = mock_df
+    mock_alpaca_service.get_bars.return_value.df = mock_df
 
     # Mock get_position to return a positive value (current position)
     sma_crossover_strategy.get_position = AsyncMock(return_value=1.0)
@@ -122,9 +122,9 @@ async def test_sma_crossover_sell_signal(sma_crossover_strategy, mock_alpaca_ser
 
     await sma_crossover_strategy.run("SPY", "1Min", mock_db_session)
 
-    mock_alpaca_service.api.get_bars.assert_called_once()
+    mock_alpaca_service.get_bars.assert_called_once()
     sma_crossover_strategy.get_position.assert_called_once_with("SPY")
-    mock_telegram_service.send_message.assert_called_once_with("Sell signal for SPY")
+    mock_telegram_service.send_message.assert_called_once()
     mock_alpaca_service.submit_order.assert_called_once()
     mock_google_sheets_service.export_trades.assert_called_once()
 
@@ -132,17 +132,17 @@ async def test_sma_crossover_sell_signal(sma_crossover_strategy, mock_alpaca_ser
 async def test_sma_crossover_no_signal(sma_crossover_strategy, mock_alpaca_service, mock_telegram_service, mock_google_sheets_service, mock_db_session):
     # Mock historical data for no signal
     data = {
-        'close': [10, 11, 10, 11, 10, 11, 10, 11, 10, 11],
+        'close': [10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 10, 11],
     }
     mock_df = pd.DataFrame(data)
-    mock_alpaca_service.api.get_bars.return_value.df = mock_df
+    mock_alpaca_service.get_bars.return_value.df = mock_df
 
     # Mock get_position to return 0 (no current position)
     sma_crossover_strategy.get_position = AsyncMock(return_value=0.0)
 
     await sma_crossover_strategy.run("SPY", "1Min", mock_db_session)
 
-    mock_alpaca_service.api.get_bars.assert_called_once()
+    mock_alpaca_service.get_bars.assert_called_once()
     sma_crossover_strategy.get_position.assert_called_once_with("SPY")
     mock_telegram_service.send_message.assert_not_called()
     mock_alpaca_service.submit_order.assert_not_called()

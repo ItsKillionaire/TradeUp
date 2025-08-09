@@ -21,20 +21,9 @@ class MacdStrategy(BaseStrategy):
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
 
-    async def get_position(self, symbol: str) -> float:
-        try:
-            position = await self.alpaca_service.api.get_position(symbol)
-            return float(position.qty)
-        except Exception as e:
-            logging.warning(f"Could not get position for {symbol}: {e}")
-            return 0.0
+    
 
     async def run(self, symbol, timeframe, db: Session):
-        pass
-
-    async def run_on_trade(self, trade):
-        # Implement real-time logic here
-        pass
         logging.info(f"Running MACD strategy for {symbol}")
         
         bars = self.alpaca_service.get_bars(
@@ -92,3 +81,5 @@ class MacdStrategy(BaseStrategy):
             message = f"No signal for {symbol} (MACD cross) or already in position"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
+
+    

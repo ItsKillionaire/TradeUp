@@ -22,8 +22,8 @@ class Backtester:
             return {"error": "No historical data found for the given symbol and date range."}
 
         signals = self.strategy.generate_signals(historical_data)
-        trades = self._simulate_trades(historical_data, signals)
-        performance = self._calculate_performance(trades)
+        trades, portfolio_values = self._simulate_trades(historical_data, signals)
+        performance = self._calculate_performance(trades, portfolio_values)
 
         return {
             "symbol": symbol,
@@ -34,46 +34,81 @@ class Backtester:
             "trades": trades
         }
 
-    def _simulate_trades(self, historical_data: pd.DataFrame, signals: pd.DataFrame) -> List[Dict[str, Any]]:
+    def _simulate_trades(self, historical_data: pd.DataFrame, signals: pd.DataFrame) -> tuple[List[Dict[str, Any]], pd.Series]:
         """
         Simulates trades based on the strategy signals.
         """
-        positions = pd.DataFrame(index=signals.index).fillna(0.0)
-        portfolio = pd.DataFrame(index=signals.index).fillna(0.0)
-
-        positions[historical_data['symbol'][0]] = 100 * signals['signal']   # This is a simplified position sizing
-        portfolio['positions'] = (positions.multiply(historical_data['close'], axis=0))
-        portfolio['cash'] = self.initial_capital - (positions.diff().multiply(historical_data['close'], axis=0)).cumsum()
-        portfolio['total'] = portfolio['cash'] + portfolio['positions']
-        
         trades = []
+        position = 0
+        buy_price = 0
+        portfolio_values = []
+        cash = self.initial_capital
+
         for i in range(len(signals)):
-            if signals['positions'].iloc[i] != 0:
-                trade = {
+            portfolio_value = cash
+            if position == 1:
+                portfolio_value += 100 * historical_data['close'].iloc[i]
+            
+            if signals['signal'].iloc[i] == 1 and position == 0: # Buy signal
+                position = 1
+                buy_price = historical_data['close'].iloc[i]
+                cash -= 100 * buy_price
+                trades.append({
                     "date": signals.index[i],
                     "symbol": historical_data['symbol'][0],
-                    "action": "buy" if signals['positions'].iloc[i] > 0 else "sell",
-                    "quantity": abs(signals['positions'].iloc[i] * 100), # Simplified quantity
-                    "price": historical_data['close'].iloc[i]
-                }
-                trades.append(trade)
+                    "action": "buy",
+                    "quantity": 100,
+                    "price": buy_price
+                })
+            elif signals['signal'].iloc[i] == -1 and position == 1: # Sell signal
+                position = 0
+                sell_price = historical_data['close'].iloc[i]
+                cash += 100 * sell_price
+                trades.append({
+                    "date": signals.index[i],
+                    "symbol": historical_data['symbol'][0],
+                    "action": "sell",
+                    "quantity": 100,
+                    "price": sell_price
+                })
+            portfolio_values.append(portfolio_value)
 
-        return trades
+        return trades, pd.Series(portfolio_values, index=signals.index)
 
-    def _calculate_performance(self, trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _calculate_performance(self, trades: List[Dict[str, Any]], portfolio_values: pd.Series) -> Dict[str, Any]:
         """
         Calculates performance metrics from the trades.
         """
-        if not trades:
+        if not trades or len(trades) % 2 != 0:
             return {}
 
         total_profit_loss = 0
-        for trade in trades:
-            if trade['action'] == 'buy':
-                total_profit_loss -= trade['quantity'] * trade['price']
+        wins = 0
+        losses = 0
+        for i in range(0, len(trades), 2):
+            buy_trade = trades[i]
+            sell_trade = trades[i+1]
+            profit_loss = (sell_trade['price'] - buy_trade['price']) * buy_trade['quantity']
+            total_profit_loss += profit_loss
+            if profit_loss > 0:
+                wins += 1
             else:
-                total_profit_loss += trade['quantity'] * trade['price']
+                losses += 1
+        
+        win_rate = wins / (wins + losses) if (wins + losses) > 0 else 0
+
+        # Max Drawdown
+        peak = portfolio_values.cummax()
+        drawdown = (portfolio_values - peak) / peak
+        max_drawdown = drawdown.min()
+
+        # Sharpe Ratio
+        returns = portfolio_values.pct_change().dropna()
+        sharpe_ratio = (returns.mean() / returns.std()) * (252**0.5) # Annualized
 
         return {
-            "total_profit_loss": total_profit_loss
+            "total_profit_loss": total_profit_loss,
+            "win_rate": win_rate,
+            "max_drawdown": max_drawdown,
+            "sharpe_ratio": sharpe_ratio
         }

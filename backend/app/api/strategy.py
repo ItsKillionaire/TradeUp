@@ -22,12 +22,12 @@ async def start_strategy(
     request: Request,
     strategy_name: str,
     symbol: str,
-    trade_percentage: float = 0.05, # New parameter
+    strategy_params: dict = {},
     db: Session = Depends(get_db)
 ):
     strategy_manager = request.app.state.strategy_manager
     try:
-        strategy_instance = strategy_manager.get_strategy_instance(strategy_name, symbol=symbol, trade_percentage=trade_percentage, db=db)
+        strategy_instance = strategy_manager.get_strategy_instance(strategy_name, **strategy_params)
         strategy_manager.active_strategies.append(strategy_instance)
         await strategy_manager.telegram_service.send_message(f"Strategy {strategy_name} started for {symbol}")
         return {"message": f"Strategy {strategy_name} started for {symbol}"}

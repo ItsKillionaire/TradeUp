@@ -37,6 +37,8 @@ class GoogleSheetsService:
             logger.error(f"Error exporting trades to Google Sheets: {e}")
 
     def backfill_trades(self):
+        if not self.client:
+            return
         try:
             db = SessionLocal()
             trades = db.query(Trade).all()

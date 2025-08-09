@@ -109,10 +109,10 @@ class StrategyManager:
         ]
 
     async def run_strategy(self, name: str, symbol: str, timeframe: str, db: Session, strategy_params: Dict[str, Any]):
-        strategy_instance = self.get_strategy_instance(name, symbol=symbol, timeframe=timeframe, **strategy_params)
+        strategy_instance = self.get_strategy_instance(name, **strategy_params)
         if strategy_instance:
             self.active_strategies.append(strategy_instance)
-            await strategy_instance.run(db)
+            await strategy_instance.run(symbol, timeframe, db)
         else:
             raise ValueError(f"Strategy '{name}' not found.")
 

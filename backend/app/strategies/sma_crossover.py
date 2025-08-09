@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 class SmaCrossover(BaseStrategy):
     def __init__(self, alpaca_service, telegram_service, google_sheets_service, short_window=40, long_window=100, trade_percentage=0.05, take_profit_pct=0.05, stop_loss_pct=0.02):
-        super().__init__(alpaca_service)
+        super().__init__(alpaca_service, "SMA Crossover")
         self.short_window = short_window
         self.long_window = long_window
         self.trade_percentage = trade_percentage
@@ -20,20 +20,9 @@ class SmaCrossover(BaseStrategy):
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
 
-    async def get_position(self, symbol: str) -> float:
-        try:
-            position = await self.alpaca_service.api.get_position(symbol)
-            return float(position.qty)
-        except Exception as e:
-            logging.warning(f"Could not get position for {symbol}: {e}")
-            return 0.0
+    
 
     async def run(self, symbol, timeframe, db: Session):
-        pass
-
-    async def run_on_trade(self, trade):
-        # Implement real-time logic here
-        pass
         logging.info(f"Running SMA Crossover strategy for {symbol}")
         
         # Fetch historical data
@@ -149,3 +138,5 @@ class SmaCrossover(BaseStrategy):
             message = f"No signal for {symbol} or position is aligned with signal. Short SMA: {short_mavg:.2f}, Long SMA: {long_mavg:.2f}"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
+
+    
