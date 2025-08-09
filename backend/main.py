@@ -8,8 +8,9 @@ from app.models import trade
 import asyncio
 from app.services.alpaca import AlpacaService
 from app.core.connection_manager import manager
-
-setup_logging()
+from app.core.strategy_manager import StrategyManager
+from app.services.telegram import TelegramService
+from app.services.google_sheets import GoogleSheetsService
 
 trade.Base.metadata.create_all(bind=engine)
 
@@ -17,8 +18,9 @@ setup_logging()
 
 app = FastAPI()
 
+alpaca_service = AlpacaService()
+
 async def broadcast_updates():
-    alpaca_service = AlpacaService()
     while True:
         try:
             positions = alpaca_service.get_open_positions()
@@ -32,6 +34,12 @@ async def broadcast_updates():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_updates())
+    global strategy_manager
+    alpaca_service = AlpacaService()
+    telegram_service = TelegramService()
+    google_sheets_service = GoogleSheetsService()
+    strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
+    await alpaca_service.start_stream(strategy_manager)
 
 origins = [
     "http://localhost:3000",

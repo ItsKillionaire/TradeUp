@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useEffect } from 'react';
 import { Typography, Box, Paper } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { useStore } from './store';
 
 const StatusIndicator = styled(Box)<{ open: boolean }>(({ theme, open }) => ({
   width: 20,
@@ -13,30 +13,19 @@ const StatusIndicator = styled(Box)<{ open: boolean }>(({ theme, open }) => ({
 }));
 
 const MarketStatus: React.FC = () => {
-  const [marketStatus, setMarketStatus] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { marketStatus, loadingMarketStatus, errorMarketStatus, fetchMarketStatus } = useStore();
 
   useEffect(() => {
-    axios.get('/api/market/status')
-      .then(response => {
-        setMarketStatus(response.data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching market status:', error);
-        setError('Failed to fetch market status.');
-        setLoading(false);
-      });
-  }, []);
+    fetchMarketStatus();
+  }, [fetchMarketStatus]);
 
   const renderStatus = () => {
-    if (loading) {
+    if (loadingMarketStatus) {
       return <Typography>Loading market status...</Typography>;
     }
 
-    if (error) {
-      return <Typography color="error">{error}</Typography>;
+    if (errorMarketStatus) {
+      return <Typography color="error">{errorMarketStatus}</Typography>;
     }
 
     if (marketStatus) {
