@@ -1,5 +1,17 @@
 # Alpaca Trader Bot
 
+Features
+
+    Real-time market data: View real-time market data and account information.
+
+    Strategy management: Create, backtest, and deploy trading strategies.
+
+    Order execution: Place and manage orders with the Alpaca API.
+
+    Trade history: View a complete history of your trades.
+
+    Logs: Monitor the application's activity through a real-time log stream.
+
 This project consists of a React frontend and a FastAPI backend for an algorithmic trading bot.
 
 ## Getting Started
