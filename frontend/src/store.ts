@@ -35,6 +35,7 @@ interface StoreState {
   setAccount: (account: any) => void;
   setMarketStatus: (marketStatus: MarketStatus) => void;
   addMessage: (message: string) => void;
+  clearMessages: () => void;
   setTrades: (trades: any[]) => void;
   setPositions: (positions: any[]) => void;
   setOrders: (orders: any[]) => void;
@@ -73,6 +74,7 @@ export const useStore = create<StoreState>((set) => ({
   setAccount: (account) => set({ account }),
   setMarketStatus: (marketStatus) => set({ marketStatus }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+  clearMessages: () => set({ messages: [] }),
   setTrades: (trades) => set({ trades }),
   setPositions: (positions) => set({ positions }),
   setOrders: (orders) => set({ orders }),
