@@ -37,6 +37,7 @@ interface StoreState {
   addMessage: (message: string) => void;
   clearMessages: () => void;
   setTrades: (trades: any[]) => void;
+  addTrade: (trade: any) => void;
   setPositions: (positions: any[]) => void;
   setOrders: (orders: any[]) => void;
   setLoadingAccount: (loading: boolean) => void;
@@ -76,6 +77,7 @@ export const useStore = create<StoreState>((set) => ({
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   clearMessages: () => set({ messages: [] }),
   setTrades: (trades) => set({ trades }),
+  addTrade: (trade) => set((state) => ({ trades: [...state.trades, trade] })),
   setPositions: (positions) => set({ positions }),
   setOrders: (orders) => set({ orders }),
   setLoadingAccount: (loading) => set({ loadingAccount: loading }),

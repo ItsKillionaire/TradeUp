@@ -17,8 +17,10 @@ const Dashboard: React.FC = () => {
         setAccount,
         addMessage,
         setTrades,
+        addTrade,
         setPositions,
         setOrders,
+        setMarketStatus,
         setLoadingAccount,
         setErrorAccount,
         setLoadingTrades,
@@ -87,6 +89,10 @@ const Dashboard: React.FC = () => {
                     setPositions(data.data);
                 } else if (data.type === 'orders_update') {
                     setOrders(data.data);
+                } else if (data.type === 'trades_update') {
+                    addTrade(data.data);
+                } else if (data.type === 'market_status_update') {
+                    setMarketStatus(data.data);
                 } else if (data.type === 'chat' || data.type === 'log' || data.type === 'error') {
                     addMessage(data.message);
                 } else {

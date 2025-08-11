@@ -13,3 +13,16 @@ class Trade(Base):
     strategy = Column(String, nullable=True)
     entry_reason = Column(String, nullable=True)
     exit_reason = Column(String, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "symbol": self.symbol,
+            "qty": self.qty,
+            "price": self.price,
+            "side": self.side,
+            "timestamp": self.timestamp.isoformat(),
+            "strategy": self.strategy,
+            "entry_reason": self.entry_reason,
+            "exit_reason": self.exit_reason
+        }
