@@ -11,6 +11,7 @@ from app.core.connection_manager import manager
 from app.core.strategy_manager import StrategyManager
 from app.services.telegram import TelegramService
 from app.services.google_sheets import GoogleSheetsService
+from app.core.market_watcher import watch_market_status
 
 trade.Base.metadata.create_all(bind=engine)
 
@@ -31,9 +32,12 @@ async def broadcast_updates():
             print(f"Error broadcasting updates: {e}")
         await asyncio.sleep(5)
 
+from app.core.market_watcher import watch_market_status
+
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_updates())
+    asyncio.create_task(watch_market_status())
     alpaca_service = AlpacaService()
     telegram_service = TelegramService()
     google_sheets_service = GoogleSheetsService()

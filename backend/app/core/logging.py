@@ -1,5 +1,6 @@
 import logging
 import sys
+from app.core.websocket_logging_handler import WebSocketLoggingHandler
 
 def setup_logging():
     logging.basicConfig(
@@ -7,6 +8,7 @@ def setup_logging():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler("trading_bot.log")
+            logging.FileHandler("trading_bot.log"),
+            WebSocketLoggingHandler()
         ]
     )
