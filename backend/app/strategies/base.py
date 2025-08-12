@@ -32,11 +32,13 @@ def get_strategy(name, *args, **kwargs):
     # A better solution might be a registration pattern.
     from .sma_crossover import SmaCrossover
     from .mean_reversion import MeanReversion
+    from .ai_strategy import AIStrategy
     # ... import other strategies here
 
     strategies = {
         "SMA Crossover": SmaCrossover,
         "Mean Reversion": MeanReversion,
+        "AI Strategy": AIStrategy,
         # ... add other strategies here
     }
     
