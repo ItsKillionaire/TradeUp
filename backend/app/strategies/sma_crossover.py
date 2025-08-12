@@ -20,41 +20,59 @@ class SmaCrossover(BaseStrategy):
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
 
-    
+    def generate_signals(self, bars):
+        """Generates signals for the SMA Crossover strategy."""
+        if len(bars) < self.long_window:
+            logging.warning(f"Not enough data to generate signals. Need {self.long_window}, have {len(bars)}.")
+            # Return a DataFrame with no signals
+            signals = pd.DataFrame(index=bars.index)
+            signals['signal'] = 0
+            signals['position'] = 0
+            return signals
+
+        # Calculate SMAs
+        signals = pd.DataFrame(index=bars.index)
+        signals['short_mavg'] = bars['close'].rolling(self.short_window, min_periods=1).mean()
+        signals['long_mavg'] = bars['close'].rolling(self.long_window, min_periods=1).mean()
+
+        # Generate signals
+        signals['signal'] = 0
+        signals.loc[signals.index[self.short_window:], 'signal'] = np.where(
+            signals['short_mavg'][self.short_window:] > signals['long_mavg'][self.short_window:], 1, 0
+        )
+
+        signals['position'] = signals['signal'].diff()
+        return signals
 
     async def run(self, symbol, timeframe, db: Session):
         logging.info(f"Running SMA Crossover strategy for {symbol}")
         
         # Fetch historical data
-        bars = self.alpaca_service.get_bars(
+        bars_data = self.alpaca_service.get_bars(
             symbol,
             timeframe,
             limit=self.long_window + 5
-        ).df
+        )
+        if not bars_data:
+            logging.warning(f"Fetched 0 bars for {symbol}. Cannot run strategy.")
+            return
+
+        bars = bars_data.df
         logging.info(f"Fetched {len(bars)} bars for {symbol} with timeframe {timeframe}.")
 
         if len(bars) < self.long_window:
             logging.warning(f"Not enough data for {symbol} to run strategy.")
             return
 
-        # Calculate SMAs
-        bars['short_mavg'] = bars['close'].rolling(self.short_window).mean()
-        bars['long_mavg'] = bars['close'].rolling(self.long_window).mean()
+        # Use the new signal generation method
+        signals = self.generate_signals(bars)
 
-        # Generate signals
-        bars['signal'] = 0
-        bars.loc[bars.index[self.short_window:], 'signal'] = np.where(
-            bars['short_mavg'][self.short_window:] > bars['long_mavg'][self.short_window:], 1, 0
-        )
-
-        bars['position'] = bars['signal'].diff()
-
-        latest_position = bars['position'].iloc[-1]
+        latest_position = signals['position'].iloc[-1]
         current_position_qty = await self.get_position(symbol)
         logging.info(f"Current position for {symbol}: {current_position_qty} shares.")
 
-        short_mavg = bars['short_mavg'].iloc[-1]
-        long_mavg = bars['long_mavg'].iloc[-1]
+        short_mavg = signals['short_mavg'].iloc[-1]
+        long_mavg = signals['long_mavg'].iloc[-1]
 
         if latest_position == 1.0 and current_position_qty == 0:
             account_info = await self.alpaca_service.get_account_info()
@@ -138,5 +156,13 @@ class SmaCrossover(BaseStrategy):
             message = f"No signal for {symbol} or position is aligned with signal. Short SMA: {short_mavg:.2f}, Long SMA: {long_mavg:.2f}"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
+
+    async def get_position(self, symbol):
+        try:
+            position = self.alpaca_service.api.get_position(symbol)
+            return float(position.qty)
+        except Exception as e:
+            # The Alpaca API throws an exception if there is no position, which is not ideal.
+            return 0
 
     

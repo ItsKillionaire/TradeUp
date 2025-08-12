@@ -40,13 +40,20 @@ class AlpacaService:
             logging.error(f"An unexpected error occurred while fetching account info: {e}")
             raise HTTPException(status_code=500, detail=f"An unexpected error occurred while fetching account info: {e}")
 
-    def get_bars(self, symbol, timeframe, limit):
+    def get_bars(self, symbol, timeframe, start=None, end=None, limit=None):
         try:
-            bars = self.data_api.get_bars(
-                symbol,
-                timeframe,
-                limit=limit
-            )
+            request_params = {
+                'symbol_or_symbols': symbol,
+                'timeframe': timeframe,
+                'start': start,
+                'end': end,
+                'limit': limit
+            }
+            # Alpaca API requires start/end to be in ISO format
+            # And it's better to remove None params
+            request_params = {k: v for k, v in request_params.items() if v is not None}
+
+            bars = self.data_api.get_bars(**request_params)
             return bars
         except Exception as e:
             logging.error(f"Error fetching bars: {e}")

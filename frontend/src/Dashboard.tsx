@@ -10,6 +10,7 @@ import TradeHistory from './TradeHistory';
 import OpenPositions from './OpenPositions';
 import RecentOrders from './RecentOrders';
 import MarketStatus from './MarketStatus';
+import Backtester from './Backtester';
 import packageJson from '../package.json';
 
 const Dashboard: React.FC = () => {
@@ -164,6 +165,11 @@ const Dashboard: React.FC = () => {
                 <Grid item xs={12}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                         <TradeHistory />
+                    </Paper>
+                </Grid>
+                <Grid item xs={12}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <Backtester />
                     </Paper>
                 </Grid>
             </Grid>
