@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from app.services.alpaca import AlpacaService
 import logging
+from ..core.risk_manager import RiskManager
 
 class BaseStrategy:
-    def __init__(self, alpaca_service, name="Base Strategy"):
+    def __init__(self, alpaca_service, risk_manager, name="Base Strategy"):
         self.alpaca_service = alpaca_service
+        self.risk_manager = risk_manager
         self.name = name
         logging.info(f"{self.name} strategy initialized.")
 
@@ -50,6 +52,17 @@ def get_strategy(name, *args, **kwargs):
         telegram_service = TelegramService()
         google_sheets_service = GoogleSheetsService()
 
-        return strategy_class(alpaca_service, telegram_service, google_sheets_service, *args, **kwargs)
+        # Create RiskManager
+        try:
+            # This is a blocking call, which is not ideal in an async context.
+            # In a real application, the account info might be cached or fetched asynchronously.
+            account_info = alpaca_service.api.get_account()
+            risk_manager = RiskManager(account_equity=float(account_info.equity))
+        except Exception as e:
+            logging.error(f"Failed to initialize RiskManager: {e}. Defaulting to a fixed equity of 100,000.")
+            risk_manager = RiskManager(account_equity=100000)
+
+
+        return strategy_class(alpaca_service, risk_manager, telegram_service, google_sheets_service, *args, **kwargs)
     return None
 

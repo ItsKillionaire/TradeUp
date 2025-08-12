@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+from ..core.risk_manager import RiskManager
+
 class Backtester:
     def __init__(self, alpaca_service, strategy, start_date, end_date, initial_capital=100000):
         self.alpaca_service = alpaca_service
@@ -15,62 +17,47 @@ class Backtester:
         self.portfolio_value = initial_capital
         self.positions = {}
         self.trades = []
+        self.risk_manager = RiskManager(account_equity=self.initial_capital)
 
     def run(self, symbol, timeframe='1Day'):
-        logging.info(f"Starting backtest for {symbol} from {self.start_date} to {self.end_date}")
+        logging.info(f"Starting backtest for {symbol} from {self.start_date} to {self.end_date} with Risk Management")
 
-        # 1. Fetch Historical Data
         try:
-            bars_data = self.alpaca_service.get_bars(
-                symbol=symbol,
-                timeframe=timeframe,
-                start=self.start_date,
-                end=self.end_date
-            )
-            if not bars_data:
+            bars_data = self.alpaca_service.get_bars(symbol=symbol, timeframe=timeframe, start=self.start_date, end=self.end_date)
+            if not bars_data or bars_data.df.empty:
                 logging.warning(f"No data found for {symbol} in the given date range.")
                 return {"error": "No data found."}
-            
             bars = bars_data.df
-            logging.info(f"Fetched {len(bars)} bars for {symbol}.")
-
         except Exception as e:
             logging.error(f"Error fetching bars for backtest: {e}")
             return {"error": str(e)}
 
-        # 2. Prepare data for strategy
-        # This is a crucial step where we might need to adapt the strategy
-        # For now, we assume the strategy can produce signals from the dataframe
         signals = self.strategy.generate_signals(bars)
+        atr = self.risk_manager.calculate_atr(bars)
 
-        # 3. Simulation Loop
         for i in range(len(bars)):
             current_price = bars['close'].iloc[i]
             date = bars.index[i]
-            
-            # Update portfolio value
             self._update_portfolio_value(current_price, symbol)
 
             signal = signals['position'].iloc[i]
 
-            if signal == 1.0: # Buy Signal
-                self._execute_buy(symbol, current_price, date)
-            elif signal == -1.0: # Sell Signal
-                self._execute_sell(symbol, current_price, date)
+            if signal == 1.0 and self.positions.get(symbol, 0) == 0: # Buy Signal and no position
+                stop_loss_price = self.risk_manager.calculate_stop_loss(current_price, atr.iloc[i])
+                qty_to_buy = self.risk_manager.calculate_position_size(current_price, stop_loss_price)
+                self._execute_buy(symbol, current_price, date, qty_to_buy)
 
-        # 4. Finalization and Performance Calculation
+            elif signal == -1.0 and self.positions.get(symbol, 0) > 0: # Sell Signal and in position
+                self._execute_sell(symbol, current_price, date)
+        
         return self._calculate_performance(bars)
 
     def _update_portfolio_value(self, current_price, symbol):
         position_value = self.positions.get(symbol, 0) * current_price
         self.portfolio_value = self.cash + position_value
 
-    def _execute_buy(self, symbol, price, date):
-        if self.cash > 0:
-            # For now, simple logic: use 10% of cash per trade
-            amount_to_invest = self.initial_capital * 0.10
-            qty_to_buy = amount_to_invest / price
-            
+    def _execute_buy(self, symbol, price, date, qty_to_buy):
+        if self.cash > 0 and qty_to_buy > 0:
             cost = qty_to_buy * price
             if self.cash >= cost:
                 self.positions[symbol] = self.positions.get(symbol, 0) + qty_to_buy
