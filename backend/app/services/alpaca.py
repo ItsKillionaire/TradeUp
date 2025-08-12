@@ -157,3 +157,9 @@ class AlpacaService:
 
         self.stream.subscribe_trades(trade_handler, '*')
         asyncio.create_task(self.stream._run_forever())
+
+# Singleton instance of AlpacaService
+alpaca_service = AlpacaService()
+
+def get_alpaca_service():
+    return alpaca_service
