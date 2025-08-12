@@ -1,3 +1,4 @@
+import logging
 from app.strategies.base import BaseStrategy
 from app.strategies.sma_crossover import SmaCrossover
 from app.strategies.adaptive_strategy import AdaptiveStrategy
@@ -15,14 +16,13 @@ from typing import Dict, Type, Any
 from sqlalchemy.orm import Session
 
 class StrategyManager:
-    def __init__(self, alpaca_service, telegram_service, google_sheets_service):
+    def __init__(self, alpaca_service, risk_manager, telegram_service, google_sheets_service):
         self.alpaca_service = alpaca_service
+        self.risk_manager = risk_manager
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
         self.active_strategies = []
-        self.alpaca_service = alpaca_service
-        self.telegram_service = telegram_service
-        self.google_sheets_service = google_sheets_service
+        
         self._strategy_classes: Dict[str, Dict[str, Any]] = {
             "sma_crossover": {
                 "class": SmaCrossover,
@@ -86,13 +86,19 @@ class StrategyManager:
             }
         }
 
+    import logging
+
+# ... (rest of the file)
+
     def get_strategy_instance(self, name: str, **kwargs) -> BaseStrategy:
         strategy_info = self._strategy_classes.get(name)
         if not strategy_info:
             return None
         strategy_class = strategy_info["class"]
+        logging.info(f"Instantiating strategy {name} with kwargs: {kwargs}")
         return strategy_class(
             self.alpaca_service,
+            self.risk_manager,
             self.telegram_service,
             self.google_sheets_service,
             **kwargs

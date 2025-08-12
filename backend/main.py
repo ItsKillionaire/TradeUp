@@ -9,6 +9,7 @@ import asyncio
 from app.services.alpaca import AlpacaService
 from app.core.connection_manager import manager
 from app.core.strategy_manager import StrategyManager
+from app.core.risk_manager import RiskManager
 from app.services.telegram import TelegramService
 from app.services.google_sheets import GoogleSheetsService
 from app.core.market_watcher import watch_market_status
@@ -39,9 +40,11 @@ async def startup_event():
     asyncio.create_task(broadcast_updates())
     asyncio.create_task(watch_market_status())
     alpaca_service = AlpacaService()
+    account_info = await alpaca_service.get_account_info()
+    risk_manager = RiskManager(account_equity=float(account_info.equity))
     telegram_service = TelegramService()
     google_sheets_service = GoogleSheetsService()
-    app.state.strategy_manager = StrategyManager(alpaca_service, telegram_service, google_sheets_service)
+    app.state.strategy_manager = StrategyManager(alpaca_service, risk_manager, telegram_service, google_sheets_service)
     await alpaca_service.start_stream(app.state.strategy_manager)
 
 origins = [
