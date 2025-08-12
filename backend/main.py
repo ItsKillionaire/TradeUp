@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import account, strategy, google_sheets, websocket, trades, market
+from app.api import account, strategy, google_sheets, websocket, trades, market, scanner
 from app.core.logging import setup_logging
 from app.core.database import engine
 from app.models import trade
@@ -62,6 +62,7 @@ app.include_router(google_sheets.router, prefix="/api")
 app.include_router(websocket.router)
 app.include_router(trades.router, prefix="/api")
 app.include_router(market.router, prefix="/api/market")
+app.include_router(scanner.router, prefix="/api/scanner")
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
