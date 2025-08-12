@@ -2,8 +2,8 @@ import logging
 import pandas as pd
 import numpy as np
 import joblib
+import xgboost as xgb
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from app.strategies.base import BaseStrategy
 
@@ -28,37 +28,84 @@ class AIStrategy(BaseStrategy):
             joblib.dump(self.model, MODEL_PATH)
             logging.info(f"AI model saved to {MODEL_PATH}")
 
-    def _prepare_features(self, bars: pd.DataFrame) -> pd.DataFrame:
-        """Creates features for the model."""
-        features = pd.DataFrame(index=bars.index)
-        # Add features like RSI, MACD, Bollinger Bands, etc.
-        # For simplicity, we'll start with a few moving average crossovers.
-        features['sma_5'] = bars['close'].rolling(window=5).mean()
-        features['sma_10'] = bars['close'].rolling(window=10).mean()
-        features['sma_20'] = bars['close'].rolling(window=20).mean()
-        features['sma_50'] = bars['close'].rolling(window=50).mean()
-        features.dropna(inplace=True)
-        return features
+    def _calculate_atr(self, bars: pd.DataFrame, period=14) -> pd.Series:
+        """Calculates the Average True Range (ATR)."""
+        if len(bars) < period:
+            return pd.Series(index=bars.index, dtype=float)
 
-    def _prepare_labels(self, bars: pd.DataFrame) -> pd.Series:
-        """Creates labels for training. Predict if the price will be higher or lower in the future."""
-        labels = pd.Series(index=bars.index, dtype=int, name="target")
-        # 1 if price is higher 5 bars from now, 0 otherwise
-        labels = np.where(bars['close'].shift(-5) > bars['close'], 1, 0)
-        return pd.Series(labels, index=bars.index)
+        high_low = bars['high'] - bars['low']
+        high_close = np.abs(bars['high'] - bars['close'].shift())
+        low_close = np.abs(bars['low'] - bars['close'].shift())
+
+        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        atr = tr.rolling(window=period).mean()
+        return atr
+
+    def _prepare_features(self, bars: pd.DataFrame) -> pd.DataFrame:
+        """Creates a rich set of features for the model using pandas-ta."""
+        try:
+            import pandas_ta as ta
+            features = pd.DataFrame(index=bars.index)
+            features.ta.strategy("all") # This is a powerful way to get many features at once
+            # Clean up the feature names for compatibility with scikit-learn
+            features.columns = features.columns.str.replace(r'[^A-Za-z0-9_]+', '', regex=True)
+            features.dropna(inplace=True)
+            return features
+        except ImportError:
+            logging.error("pandas-ta is not installed. Cannot create advanced features.")
+            # Fallback to simple features
+            features = pd.DataFrame(index=bars.index)
+            features['sma_5'] = bars['close'].rolling(window=5).mean()
+            features['sma_10'] = bars['close'].rolling(window=10).mean()
+            features['sma_20'] = bars['close'].rolling(window=20).mean()
+            features['sma_50'] = bars['close'].rolling(window=50).mean()
+            features.dropna(inplace=True)
+            return features
+        except Exception as e:
+            logging.error(f"Error creating features with pandas-ta: {e}")
+            return pd.DataFrame() # Return empty dataframe on error
+
+    def _prepare_labels(self, bars: pd.DataFrame, look_forward=5, risk_reward_ratio=2.0) -> pd.Series:
+        """
+        Creates labels for training based on a risk/reward outcome.
+        - 1 (Buy): If the price hits the take profit target before the stop loss target.
+        - 0 (Sell/Hold): If the price hits the stop loss target first or does nothing.
+        """
+        atr = self._calculate_atr(bars)
+        labels = pd.Series(0, index=bars.index)
+
+        for i in range(len(bars) - look_forward):
+            entry_price = bars['close'].iloc[i]
+            atr_value = atr.iloc[i]
+
+            if pd.isna(atr_value) or atr_value == 0:
+                continue
+
+            stop_loss_price = entry_price - atr_value
+            take_profit_price = entry_price + (atr_value * risk_reward_ratio)
+
+            future_prices = bars['close'].iloc[i+1 : i+1+look_forward]
+
+            hit_tp = (future_prices >= take_profit_price).any()
+            hit_sl = (future_prices <= stop_loss_price).any()
+
+            if hit_tp and not hit_sl:
+                labels.iloc[i] = 1 # Buy signal
+            # The default is 0, so we don't need an explicit else for sell/hold
+
+        return labels
 
     def train(self, symbol, timeframe='1Day', start_date=None, end_date=None):
-        logging.info(f"Starting AI model training for {symbol}...")
+        logging.info(f"Starting Advanced AI model training for {symbol}...")
         try:
             bars = self.alpaca_service.get_bars(symbol, timeframe, start=start_date, end=end_date).df
-            if len(bars) < 100: # Need enough data to train
+            if len(bars) < 100:
                 logging.error("Not enough historical data to train the model.")
                 return {"error": "Not enough data."}
 
             features = self._prepare_features(bars)
             labels = self._prepare_labels(bars)
 
-            # Align data
             common_index = features.index.intersection(labels.index)
             features = features.loc[common_index]
             labels = labels.loc[common_index]
@@ -67,9 +114,18 @@ class AIStrategy(BaseStrategy):
                 logging.error("Feature preparation resulted in empty data.")
                 return {"error": "Could not prepare features."}
 
-            X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42, stratify=labels)
 
-            self.model = LogisticRegression(max_iter=1000)
+            self.model = xgb.XGBClassifier(
+                objective='binary:logistic',
+                eval_metric='logloss',
+                use_label_encoder=False,
+                n_estimators=200,
+                learning_rate=0.05,
+                max_depth=5,
+                subsample=0.8,
+                colsample_bytree=0.8
+            )
             self.model.fit(X_train, y_train)
 
             accuracy = self.model.score(X_test, y_test)
