@@ -3,6 +3,7 @@ import pandas as pd
 from alpaca_trade_api.rest import REST
 from app.services.alpaca import AlpacaService
 
+
 class MarketScanner:
     def __init__(self, alpaca_service: AlpacaService):
         self.api = alpaca_service.api
@@ -12,7 +13,7 @@ class MarketScanner:
     def get_tradable_assets(self):
         """Fetches a list of tradable, shortable, US equity assets."""
         try:
-            assets = self.api.list_assets(status='active', asset_class='us_equity')
+            assets = self.api.list_assets(status="active", asset_class="us_equity")
             tradable_assets = [a for a in assets if a.tradable and a.shortable]
             logging.info(f"Found {len(tradable_assets)} tradable US equity assets.")
             return [a.symbol for a in tradable_assets]
@@ -37,12 +38,12 @@ class MarketScanner:
         for i, symbol in enumerate(symbols):
             try:
                 # Fetch daily bars for the last 30 days
-                bars = self.alpaca_service.get_bars(symbol, '1Day', limit=30).df
+                bars = self.alpaca_service.get_bars(symbol, "1Day", limit=30).df
                 if len(bars) < 30:
                     continue
 
-                last_price = bars['close'].iloc[-1]
-                avg_volume = (bars['volume'] * bars['close']).mean()
+                last_price = bars["close"].iloc[-1]
+                avg_volume = (bars["volume"] * bars["close"]).mean()
 
                 # --- Apply Filters ---
                 if last_price < min_price:
@@ -51,34 +52,40 @@ class MarketScanner:
                     continue
 
                 # ATR for volatility
-                high_low = bars['high'] - bars['low']
-                high_close = abs(bars['high'] - bars['close'].shift())
-                low_close = abs(bars['low'] - bars['close'].shift())
+                high_low = bars["high"] - bars["low"]
+                high_close = abs(bars["high"] - bars["close"].shift())
+                low_close = abs(bars["low"] - bars["close"].shift())
                 tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
                 atr = tr.rolling(window=14).mean().iloc[-1]
                 atr_pct = atr / last_price
 
                 if atr_pct < atr_threshold:
                     continue
-                
+
                 # Trend filter (e.g., price > 20-day SMA)
-                sma_20 = bars['close'].rolling(window=20).mean().iloc[-1]
+                sma_20 = bars["close"].rolling(window=20).mean().iloc[-1]
                 if last_price < sma_20:
                     continue
 
-                logging.info(f"[{(i+1)}/{total_symbols}] {symbol} is a promising candidate. Price: ${last_price:.2f}, Volatility: {atr_pct:.2%}")
-                promising_symbols.append({
-                    'symbol': symbol,
-                    'price': last_price,
-                    'avg_volume': avg_volume,
-                    'atr_pct': atr_pct
-                })
+                logging.info(
+                    f"[{(i+1)}/{total_symbols}] {symbol} is a promising candidate. Price: ${last_price:.2f}, Volatility: {atr_pct:.2%}"
+                )
+                promising_symbols.append(
+                    {
+                        "symbol": symbol,
+                        "price": last_price,
+                        "avg_volume": avg_volume,
+                        "atr_pct": atr_pct,
+                    }
+                )
 
             except Exception as e:
                 logging.debug(f"Could not process symbol {symbol}: {e}")
                 continue
-        
-        logging.info(f"Scan complete. Found {len(promising_symbols)} promising symbols.")
+
+        logging.info(
+            f"Scan complete. Found {len(promising_symbols)} promising symbols."
+        )
         return promising_symbols
 
     def run_scan(self):

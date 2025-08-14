@@ -9,6 +9,7 @@ from app.strategies.base import BaseStrategy
 
 MODEL_PATH = "./trained_models/ai_strategy_model.joblib"
 
+
 class AIStrategy(BaseStrategy):
     def __init__(self, alpaca_service, risk_manager, name="AI Strategy"):
         super().__init__(alpaca_service, risk_manager, name)
@@ -20,7 +21,9 @@ class AIStrategy(BaseStrategy):
             logging.info("AI model loaded successfully from disk.")
             return model
         except FileNotFoundError:
-            logging.warning("No pre-trained model found. The model needs to be trained.")
+            logging.warning(
+                "No pre-trained model found. The model needs to be trained."
+            )
             return None
 
     def _save_model(self):
@@ -33,9 +36,9 @@ class AIStrategy(BaseStrategy):
         if len(bars) < period:
             return pd.Series(index=bars.index, dtype=float)
 
-        high_low = bars['high'] - bars['low']
-        high_close = np.abs(bars['high'] - bars['close'].shift())
-        low_close = np.abs(bars['low'] - bars['close'].shift())
+        high_low = bars["high"] - bars["low"]
+        high_close = np.abs(bars["high"] - bars["close"].shift())
+        low_close = np.abs(bars["low"] - bars["close"].shift())
 
         tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
         atr = tr.rolling(window=period).mean()
@@ -45,27 +48,36 @@ class AIStrategy(BaseStrategy):
         """Creates a rich set of features for the model using pandas-ta."""
         try:
             import pandas_ta as ta
+
             features = pd.DataFrame(index=bars.index)
-            features.ta.strategy("all") # This is a powerful way to get many features at once
+            features.ta.strategy(
+                "all"
+            )  # This is a powerful way to get many features at once
             # Clean up the feature names for compatibility with scikit-learn
-            features.columns = features.columns.str.replace(r'[^A-Za-z0-9_]+', '', regex=True)
+            features.columns = features.columns.str.replace(
+                r"[^A-Za-z0-9_]+", "", regex=True
+            )
             features.dropna(inplace=True)
             return features
         except ImportError:
-            logging.error("pandas-ta is not installed. Cannot create advanced features.")
+            logging.error(
+                "pandas-ta is not installed. Cannot create advanced features."
+            )
             # Fallback to simple features
             features = pd.DataFrame(index=bars.index)
-            features['sma_5'] = bars['close'].rolling(window=5).mean()
-            features['sma_10'] = bars['close'].rolling(window=10).mean()
-            features['sma_20'] = bars['close'].rolling(window=20).mean()
-            features['sma_50'] = bars['close'].rolling(window=50).mean()
+            features["sma_5"] = bars["close"].rolling(window=5).mean()
+            features["sma_10"] = bars["close"].rolling(window=10).mean()
+            features["sma_20"] = bars["close"].rolling(window=20).mean()
+            features["sma_50"] = bars["close"].rolling(window=50).mean()
             features.dropna(inplace=True)
             return features
         except Exception as e:
             logging.error(f"Error creating features with pandas-ta: {e}")
-            return pd.DataFrame() # Return empty dataframe on error
+            return pd.DataFrame()  # Return empty dataframe on error
 
-    def _prepare_labels(self, bars: pd.DataFrame, look_forward=5, risk_reward_ratio=2.0) -> pd.Series:
+    def _prepare_labels(
+        self, bars: pd.DataFrame, look_forward=5, risk_reward_ratio=2.0
+    ) -> pd.Series:
         """
         Creates labels for training based on a risk/reward outcome.
         - 1 (Buy): If the price hits the take profit target before the stop loss target.
@@ -75,7 +87,7 @@ class AIStrategy(BaseStrategy):
         labels = pd.Series(0, index=bars.index)
 
         for i in range(len(bars) - look_forward):
-            entry_price = bars['close'].iloc[i]
+            entry_price = bars["close"].iloc[i]
             atr_value = atr.iloc[i]
 
             if pd.isna(atr_value) or atr_value == 0:
@@ -84,21 +96,23 @@ class AIStrategy(BaseStrategy):
             stop_loss_price = entry_price - atr_value
             take_profit_price = entry_price + (atr_value * risk_reward_ratio)
 
-            future_prices = bars['close'].iloc[i+1 : i+1+look_forward]
+            future_prices = bars["close"].iloc[i + 1 : i + 1 + look_forward]
 
             hit_tp = (future_prices >= take_profit_price).any()
             hit_sl = (future_prices <= stop_loss_price).any()
 
             if hit_tp and not hit_sl:
-                labels.iloc[i] = 1 # Buy signal
+                labels.iloc[i] = 1  # Buy signal
             # The default is 0, so we don't need an explicit else for sell/hold
 
         return labels
 
-    def train(self, symbol, timeframe='1Day', start_date=None, end_date=None):
+    def train(self, symbol, timeframe="1Day", start_date=None, end_date=None):
         logging.info(f"Starting Advanced AI model training for {symbol}...")
         try:
-            bars = self.alpaca_service.get_bars(symbol, timeframe, start=start_date, end=end_date).df
+            bars = self.alpaca_service.get_bars(
+                symbol, timeframe, start=start_date, end=end_date
+            ).df
             if len(bars) < 100:
                 logging.error("Not enough historical data to train the model.")
                 return {"error": "Not enough data."}
@@ -114,17 +128,19 @@ class AIStrategy(BaseStrategy):
                 logging.error("Feature preparation resulted in empty data.")
                 return {"error": "Could not prepare features."}
 
-            X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42, stratify=labels)
+            X_train, X_test, y_train, y_test = train_test_split(
+                features, labels, test_size=0.2, random_state=42, stratify=labels
+            )
 
             self.model = xgb.XGBClassifier(
-                objective='binary:logistic',
-                eval_metric='logloss',
+                objective="binary:logistic",
+                eval_metric="logloss",
                 use_label_encoder=False,
                 n_estimators=200,
                 learning_rate=0.05,
                 max_depth=5,
                 subsample=0.8,
-                colsample_bytree=0.8
+                colsample_bytree=0.8,
             )
             self.model.fit(X_train, y_train)
 
@@ -139,8 +155,8 @@ class AIStrategy(BaseStrategy):
 
     def generate_signals(self, bars: pd.DataFrame) -> pd.DataFrame:
         signals = pd.DataFrame(index=bars.index)
-        signals['signal'] = 0
-        signals['position'] = 0
+        signals["signal"] = 0
+        signals["position"] = 0
 
         if not self.model:
             logging.warning("AI model is not trained. Cannot generate signals.")
@@ -149,9 +165,9 @@ class AIStrategy(BaseStrategy):
         features = self._prepare_features(bars)
         if not features.empty:
             predictions = self.model.predict(features)
-            signals.loc[features.index, 'signal'] = predictions
-            signals['position'] = signals['signal'].diff()
-        
+            signals.loc[features.index, "signal"] = predictions
+            signals["position"] = signals["signal"].diff()
+
         return signals
 
     async def run(self, symbol, timeframe, db_session):
@@ -162,11 +178,13 @@ class AIStrategy(BaseStrategy):
             return
 
         # Fetch latest data to make a prediction
-        bars_data = self.alpaca_service.get_bars(symbol, timeframe, limit=100) # Need enough for feature calculation
+        bars_data = self.alpaca_service.get_bars(
+            symbol, timeframe, limit=100
+        )  # Need enough for feature calculation
         if not bars_data or bars_data.df.empty:
             logging.warning(f"Could not fetch bars for {symbol} for AI prediction.")
             return
-        
+
         bars = bars_data.df
         features = self._prepare_features(bars)
 
@@ -178,11 +196,13 @@ class AIStrategy(BaseStrategy):
         prediction = self.model.predict(features.tail(1))[0]
         current_position_qty = await self.get_position(symbol)
 
-        if prediction == 1 and current_position_qty == 0: # Buy signal
-            last_price = bars['close'].iloc[-1]
+        if prediction == 1 and current_position_qty == 0:  # Buy signal
+            last_price = bars["close"].iloc[-1]
             atr = self.risk_manager.calculate_atr(bars).iloc[-1]
             stop_loss_price = self.risk_manager.calculate_stop_loss(last_price, atr)
-            qty_to_buy = self.risk_manager.calculate_position_size(last_price, stop_loss_price)
+            qty_to_buy = self.risk_manager.calculate_position_size(
+                last_price, stop_loss_price
+            )
 
             if qty_to_buy > 0:
                 take_profit_price = last_price + (last_price - stop_loss_price) * 2
@@ -190,9 +210,14 @@ class AIStrategy(BaseStrategy):
                 logging.info(message)
                 await self.telegram_service.send_message(message)
                 self.alpaca_service.submit_order(
-                    symbol=symbol, qty=qty_to_buy, side='buy', type='market', time_in_force='day',
-                    order_class='bracket', take_profit={'limit_price': round(take_profit_price, 2)},
-                    stop_loss={'stop_price': round(stop_loss_price, 2)}
+                    symbol=symbol,
+                    qty=qty_to_buy,
+                    side="buy",
+                    type="market",
+                    time_in_force="day",
+                    order_class="bracket",
+                    take_profit={"limit_price": round(take_profit_price, 2)},
+                    stop_loss={"stop_price": round(stop_loss_price, 2)},
                 )
         elif prediction == 0 and current_position_qty > 0:
             logging.info(f"AI TRADE SIGNAL: Sell {symbol}. Closing position.")

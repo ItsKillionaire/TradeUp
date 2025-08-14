@@ -3,10 +3,12 @@ from pytest_mock import MockerFixture
 from unittest.mock import MagicMock, AsyncMock
 import sys
 
+
 @pytest.fixture(scope="session")
 def session_mocker(pytestconfig):
     """Session-scoped mocker fixture."""
     return MockerFixture(pytestconfig)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def mock_all_services_and_config(session_mocker: MockerFixture):
@@ -27,17 +29,27 @@ def mock_all_services_and_config(session_mocker: MockerFixture):
     mock_config_module.settings.GOOGLE_SHEETS_CREDENTIALS = "{}"
 
     # Patch sys.modules to return our mock objects when modules are imported
-    session_mocker.patch.dict(sys.modules, {
-        'config': mock_config_module,
-        'app.services.telegram': MagicMock(TelegramService=MagicMock(return_value=mock_telegram_service_instance)),
-        'app.services.google_sheets': MagicMock(GoogleSheetsService=MagicMock(return_value=mock_google_sheets_service_instance)),
-        'app.models.trade': MagicMock() # To prevent SQLAlchemy re-registration
-    })
+    session_mocker.patch.dict(
+        sys.modules,
+        {
+            "config": mock_config_module,
+            "app.services.telegram": MagicMock(
+                TelegramService=MagicMock(return_value=mock_telegram_service_instance)
+            ),
+            "app.services.google_sheets": MagicMock(
+                GoogleSheetsService=MagicMock(
+                    return_value=mock_google_sheets_service_instance
+                )
+            ),
+            "app.models.trade": MagicMock(),  # To prevent SQLAlchemy re-registration
+        },
+    )
 
     # Yield control to tests, then clean up if necessary (though mocker handles most of it)
     yield
 
     # Clean up sys.modules if necessary (mocker.patch.dict handles this on teardown)
+
 
 @pytest.fixture
 def mock_alpaca_service():
@@ -46,17 +58,22 @@ def mock_alpaca_service():
     service.get_account_info = AsyncMock(return_value=MagicMock(buying_power="10000"))
     return service
 
+
 @pytest.fixture
 def mock_telegram_service_instance(mock_all_services_and_config):
     # This fixture now just returns the mocked instance created in mock_all_services_and_config
     # We need to re-import the service to get the patched version
     from app.services.telegram import TelegramService
+
     return TelegramService()
+
 
 @pytest.fixture
 def mock_google_sheets_service_instance(mock_all_services_and_config):
     from app.services.google_sheets import GoogleSheetsService
+
     return GoogleSheetsService()
+
 
 @pytest.fixture
 def mock_db_session():

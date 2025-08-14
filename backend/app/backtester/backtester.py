@@ -1,4 +1,3 @@
-
 import logging
 import pandas as pd
 import numpy as np
@@ -6,8 +5,11 @@ from datetime import datetime
 
 from ..core.risk_manager import RiskManager
 
+
 class Backtester:
-    def __init__(self, alpaca_service, strategy, start_date, end_date, initial_capital=100000):
+    def __init__(
+        self, alpaca_service, strategy, start_date, end_date, initial_capital=100000
+    ):
         self.alpaca_service = alpaca_service
         self.strategy = strategy
         self.start_date = start_date
@@ -19,11 +21,18 @@ class Backtester:
         self.trades = []
         self.risk_manager = RiskManager(account_equity=self.initial_capital)
 
-    def run(self, symbol, timeframe='1Day'):
-        logging.info(f"Starting backtest for {symbol} from {self.start_date} to {self.end_date} with Risk Management")
+    def run(self, symbol, timeframe="1Day"):
+        logging.info(
+            f"Starting backtest for {symbol} from {self.start_date} to {self.end_date} with Risk Management"
+        )
 
         try:
-            bars_data = self.alpaca_service.get_bars(symbol=symbol, timeframe=timeframe, start=self.start_date, end=self.end_date)
+            bars_data = self.alpaca_service.get_bars(
+                symbol=symbol,
+                timeframe=timeframe,
+                start=self.start_date,
+                end=self.end_date,
+            )
             if not bars_data or bars_data.df.empty:
                 logging.warning(f"No data found for {symbol} in the given date range.")
                 return {"error": "No data found."}
@@ -36,20 +45,28 @@ class Backtester:
         atr = self.risk_manager.calculate_atr(bars)
 
         for i in range(len(bars)):
-            current_price = bars['close'].iloc[i]
+            current_price = bars["close"].iloc[i]
             date = bars.index[i]
             self._update_portfolio_value(current_price, symbol)
 
-            signal = signals['position'].iloc[i]
+            signal = signals["position"].iloc[i]
 
-            if signal == 1.0 and self.positions.get(symbol, 0) == 0: # Buy Signal and no position
-                stop_loss_price = self.risk_manager.calculate_stop_loss(current_price, atr.iloc[i])
-                qty_to_buy = self.risk_manager.calculate_position_size(current_price, stop_loss_price)
+            if (
+                signal == 1.0 and self.positions.get(symbol, 0) == 0
+            ):  # Buy Signal and no position
+                stop_loss_price = self.risk_manager.calculate_stop_loss(
+                    current_price, atr.iloc[i]
+                )
+                qty_to_buy = self.risk_manager.calculate_position_size(
+                    current_price, stop_loss_price
+                )
                 self._execute_buy(symbol, current_price, date, qty_to_buy)
 
-            elif signal == -1.0 and self.positions.get(symbol, 0) > 0: # Sell Signal and in position
+            elif (
+                signal == -1.0 and self.positions.get(symbol, 0) > 0
+            ):  # Sell Signal and in position
                 self._execute_sell(symbol, current_price, date)
-        
+
         return self._calculate_performance(bars)
 
     def _update_portfolio_value(self, current_price, symbol):
@@ -62,10 +79,15 @@ class Backtester:
             if self.cash >= cost:
                 self.positions[symbol] = self.positions.get(symbol, 0) + qty_to_buy
                 self.cash -= cost
-                self.trades.append({
-                    "date": date, "symbol": symbol, "side": "buy",
-                    "qty": qty_to_buy, "price": price
-                })
+                self.trades.append(
+                    {
+                        "date": date,
+                        "symbol": symbol,
+                        "side": "buy",
+                        "qty": qty_to_buy,
+                        "price": price,
+                    }
+                )
                 logging.debug(f"{date}: Bought {qty_to_buy} of {symbol} at {price}")
 
     def _execute_sell(self, symbol, price, date):
@@ -73,10 +95,15 @@ class Backtester:
             qty_to_sell = self.positions[symbol]
             self.cash += qty_to_sell * price
             self.positions[symbol] = 0
-            self.trades.append({
-                "date": date, "symbol": symbol, "side": "sell",
-                "qty": qty_to_sell, "price": price
-            })
+            self.trades.append(
+                {
+                    "date": date,
+                    "symbol": symbol,
+                    "side": "sell",
+                    "qty": qty_to_sell,
+                    "price": price,
+                }
+            )
             logging.debug(f"{date}: Sold {qty_to_sell} of {symbol} at {price}")
 
     def _calculate_performance(self, bars):
@@ -87,7 +114,7 @@ class Backtester:
                 "final_portfolio_value": self.portfolio_value,
                 "net_profit": 0,
                 "return_pct": 0,
-                "trades": []
+                "trades": [],
             }
 
         final_value = self.portfolio_value
@@ -100,5 +127,5 @@ class Backtester:
             "net_profit": round(net_profit, 2),
             "return_pct": round(return_pct, 2),
             "total_trades": len(self.trades),
-            "trades": self.trades
+            "trades": self.trades,
         }

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from app.core.database import SessionLocal, engine, Base
 from app.models.trade import Trade
@@ -18,6 +18,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def backfill_trades_from_alpaca():
     db = SessionLocal()
@@ -32,7 +33,9 @@ def backfill_trades_from_alpaca():
 
         # 2. Fetch closed orders from Alpaca
         logger.info("Fetching historical orders from Alpaca...")
-        orders = alpaca_service.api.list_orders(status='closed', limit=500, direction='asc')
+        orders = alpaca_service.api.list_orders(
+            status="closed", limit=500, direction="asc"
+        )
         filled_orders = [o for o in orders if o.filled_at is not None]
         logger.info(f"Found {len(filled_orders)} filled historical orders.")
 
@@ -46,7 +49,7 @@ def backfill_trades_from_alpaca():
                 side=order.side,
                 strategy="Historical Import",
                 entry_reason=f"Imported from Alpaca order {order.id}",
-                exit_reason=None
+                exit_reason=None,
             )
         logger.info("Successfully populated the local database with historical trades.")
 
@@ -60,6 +63,7 @@ def backfill_trades_from_alpaca():
         db.rollback()
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)

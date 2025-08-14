@@ -3,6 +3,7 @@ from app.services.alpaca import AlpacaService
 
 router = APIRouter()
 
+
 @router.get("/status")
 def get_market_status():
     alpaca_service = AlpacaService()
@@ -11,5 +12,5 @@ def get_market_status():
         "is_open": clock.is_open,
         "next_open": clock.next_open.isoformat(),
         "next_close": clock.next_close.isoformat(),
-        "timestamp": clock.timestamp.isoformat()
+        "timestamp": clock.timestamp.isoformat(),
     }

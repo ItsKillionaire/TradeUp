@@ -2,6 +2,7 @@ import logging
 import sys
 from app.core.websocket_logging_handler import WebSocketLoggingHandler
 
+
 def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
@@ -9,6 +10,6 @@ def setup_logging():
         handlers=[
             logging.StreamHandler(sys.stdout),
             logging.FileHandler("trading_bot.log"),
-            WebSocketLoggingHandler()
-        ]
+            WebSocketLoggingHandler(),
+        ],
     )

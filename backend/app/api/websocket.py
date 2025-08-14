@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     logger.info(f"Attempting to connect WebSocket: {websocket.client}")
@@ -15,11 +16,17 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
             logger.info(f"Received message from {websocket.client}: {data}")
-            await manager.broadcast_json({"type": "chat", "message": f"Client said: {data}"})
+            await manager.broadcast_json(
+                {"type": "chat", "message": f"Client said: {data}"}
+            )
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info(f"WebSocket disconnected: {websocket.client}")
-        await manager.broadcast_json({"type": "chat", "message": "A client left the chat"})
+        await manager.broadcast_json(
+            {"type": "chat", "message": "A client left the chat"}
+        )
     except Exception as e:
         logger.error(f"WebSocket error for {websocket.client}: {e}")
-        await manager.broadcast_json({"type": "error", "message": f"WebSocket error: {e}"})
+        await manager.broadcast_json(
+            {"type": "error", "message": f"WebSocket error: {e}"}
+        )

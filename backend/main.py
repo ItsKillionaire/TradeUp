@@ -23,27 +23,34 @@ app = FastAPI()
 
 alpaca_service = AlpacaService()
 
+
 async def broadcast_updates():
     while True:
         try:
             positions = alpaca_service.get_open_positions()
             orders = alpaca_service.get_orders()
-            await manager.broadcast_json({"type": "positions_update", "data": positions})
+            await manager.broadcast_json(
+                {"type": "positions_update", "data": positions}
+            )
             await manager.broadcast_json({"type": "orders_update", "data": orders})
         except Exception as e:
             logging.error(f"Error broadcasting updates: {e}")
         await asyncio.sleep(5)
+
 
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_updates())
     asyncio.create_task(watch_market_status())
     account_info = await alpaca_service.get_account_info()
-    risk_manager = RiskManager(account_equity=float(account_info['equity']))
+    risk_manager = RiskManager(account_equity=float(account_info["equity"]))
     telegram_service = TelegramService()
     google_sheets_service = GoogleSheetsService()
-    app.state.strategy_manager = StrategyManager(alpaca_service, risk_manager, telegram_service, google_sheets_service)
+    app.state.strategy_manager = StrategyManager(
+        alpaca_service, risk_manager, telegram_service, google_sheets_service
+    )
     await alpaca_service.start_stream(app.state.strategy_manager)
+
 
 origins = [
     "http://localhost:3000",
@@ -65,12 +72,14 @@ app.include_router(trades.router, prefix="/api")
 app.include_router(market.router, prefix="/api/market")
 app.include_router(scanner.router, prefix="/api/scanner")
 
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content={"message": exc.detail},
     )
+
 
 @app.get("/")
 def read_root():

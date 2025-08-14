@@ -1,4 +1,3 @@
-
 from app.core.strategy_manager import StrategyManager
 from app.services.alpaca import AlpacaService
 from app.services.telegram import TelegramService
@@ -11,5 +10,5 @@ google_sheets_service = GoogleSheetsService()
 strategy_manager = StrategyManager(
     alpaca_service=alpaca_service,
     telegram_service=telegram_service,
-    google_sheets_service=google_sheets_service
+    google_sheets_service=google_sheets_service,
 )

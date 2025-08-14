@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from app.core.database import Base
 
+
 class Trade(Base):
     __tablename__ = "trades"
 
@@ -24,5 +25,5 @@ class Trade(Base):
             "timestamp": self.timestamp.isoformat(),
             "strategy": self.strategy,
             "entry_reason": self.entry_reason,
-            "exit_reason": self.exit_reason
+            "exit_reason": self.exit_reason,
         }
