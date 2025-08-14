@@ -38,10 +38,10 @@ const OpenPositions: React.FC = () => {
                                 <TableRow key={position.asset_id}>
                                     <TableCell component="th" scope="row">{position.symbol}</TableCell>
                                     <TableCell align="right">{position.qty}</TableCell>
-                                    <TableCell align="right">{entryPrice.toFixed(2)}</TableCell>
-                                    <TableCell align="right">{parseFloat(position.market_value).toFixed(2)}</TableCell>
+                                    <TableCell align="right">{entryPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+                                    <TableCell align="right">{parseFloat(position.market_value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
                                     <TableCell align="right" style={{ color: position.unrealized_pl >= 0 ? 'green' : 'red' }}>
-                                        {parseFloat(position.unrealized_pl).toFixed(2)}
+                                        {parseFloat(position.unrealized_pl).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                     </TableCell>
                                     <TableCell align="right">
                                         {takeProfitPrice ? `${takeProfitPrice.toFixed(2)} (${potentialGain?.toFixed(2)})` : 'N/A'}
