@@ -1,4 +1,4 @@
-import React from 'react';
+import { Trade } from './types';
 import {
   Typography,
   Box,
@@ -41,7 +41,7 @@ const TradeHistory: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {trades.map((trade) => (
+            {trades.map((trade: Trade) => (
               <TableRow key={trade.id}>
                 <TableCell>{trade.symbol}</TableCell>
                 <TableCell align="right">

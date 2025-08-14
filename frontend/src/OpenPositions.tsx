@@ -1,4 +1,4 @@
-import React from 'react';
+import { Position } from './types';
 import { useStore } from './store';
 import {
   Typography,
@@ -37,7 +37,7 @@ const OpenPositions: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {positions.map((position: any) => {
+            {positions.map((position: Position) => {
               const entryPrice = parseFloat(position.avg_entry_price);
               const takeProfitPrice = position.take_profit_price
                 ? parseFloat(position.take_profit_price)
@@ -75,7 +75,10 @@ const OpenPositions: React.FC = () => {
                   <TableCell
                     align="right"
                     style={{
-                      color: position.unrealized_pl >= 0 ? 'green' : 'red',
+                      color:
+                        parseFloat(position.unrealized_pl) >= 0
+                          ? 'green'
+                          : 'red',
                     }}
                   >
                     {parseFloat(position.unrealized_pl).toLocaleString(

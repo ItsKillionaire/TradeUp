@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { Account, Position, Order, Trade } from './types';
 
 export const apiClient = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -13,12 +14,12 @@ interface MarketStatus {
 }
 
 interface StoreState {
-  account: any;
+  account: Account | null;
   marketStatus: MarketStatus | null;
   messages: string[];
-  trades: any[];
-  positions: any[];
-  orders: any[];
+  trades: Trade[];
+  positions: Position[];
+  orders: Order[];
   loadingAccount: boolean;
   errorAccount: string | null;
   loadingMarketStatus: boolean;
@@ -29,14 +30,14 @@ interface StoreState {
   errorPositions: string | null;
   loadingOrders: boolean;
   errorOrders: string | null;
-  setAccount: (account: any) => void;
+  setAccount: (account: Account | null) => void;
   setMarketStatus: (marketStatus: MarketStatus) => void;
   addMessage: (message: string) => void;
   clearMessages: () => void;
-  setTrades: (trades: any[]) => void;
-  addTrade: (trade: any) => void;
-  setPositions: (positions: any[]) => void;
-  setOrders: (orders: any[]) => void;
+  setTrades: (trades: Trade[]) => void;
+  addTrade: (trade: Trade) => void;
+  setPositions: (positions: Position[]) => void;
+  setOrders: (orders: Order[]) => void;
   setLoadingAccount: (loading: boolean) => void;
   setErrorAccount: (error: string | null) => void;
   setLoadingMarketStatus: (loading: boolean) => void;

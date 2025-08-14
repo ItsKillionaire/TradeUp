@@ -1,4 +1,4 @@
-import React from 'react';
+import { Order } from './types';
 import { useStore } from './store';
 import {
   Typography,
@@ -94,7 +94,7 @@ const RecentOrders: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {orders.slice(0, 20).map((order: any, index: number) => (
+              {orders.slice(0, 20).map((order: Order, index: number) => (
                 <TableRow
                   key={order.id}
                   hover
