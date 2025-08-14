@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
-import { trainAIModel, TrainParams, TrainResult } from './services/aiTraderService';
 import {
-  Container, TextField, Button, Typography, Paper, Grid, CircularProgress, Alert
+  trainAIModel,
+  TrainParams,
+  TrainResult,
+} from './services/aiTraderService';
+import {
+  Container,
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  Grid,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 
 const AITrader: React.FC = () => {
@@ -86,10 +97,16 @@ const AITrader: React.FC = () => {
         </Grid>
       </Paper>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       {result && (
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Training Result</Typography>
+          <Typography variant="h6" gutterBottom>
+            Training Result
+          </Typography>
           {result.error ? (
             <Alert severity="warning">{result.error}</Alert>
           ) : (

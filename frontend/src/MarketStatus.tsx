@@ -13,7 +13,12 @@ const StatusIndicator = styled(Box)<{ open: boolean }>(({ theme, open }) => ({
 }));
 
 const MarketStatus: React.FC = () => {
-  const { marketStatus, loadingMarketStatus, errorMarketStatus, fetchMarketStatus } = useStore();
+  const {
+    marketStatus,
+    loadingMarketStatus,
+    errorMarketStatus,
+    fetchMarketStatus,
+  } = useStore();
 
   useEffect(() => {
     fetchMarketStatus();
@@ -29,9 +34,11 @@ const MarketStatus: React.FC = () => {
     }
 
     if (marketStatus) {
-      const nextEventTime = marketStatus.is_open ? marketStatus.next_close : marketStatus.next_open;
+      const nextEventTime = marketStatus.is_open
+        ? marketStatus.next_close
+        : marketStatus.next_open;
       const nextEventLabel = marketStatus.is_open ? 'closes' : 'opens';
-      
+
       return (
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <StatusIndicator open={marketStatus.is_open} />
@@ -40,7 +47,8 @@ const MarketStatus: React.FC = () => {
               Market is {marketStatus.is_open ? 'Open' : 'Closed'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Next market event: {nextEventLabel} at {new Date(nextEventTime).toLocaleString()}
+              Next market event: {nextEventLabel} at{' '}
+              {new Date(nextEventTime).toLocaleString()}
             </Typography>
           </Box>
         </Box>

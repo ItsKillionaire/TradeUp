@@ -69,7 +69,8 @@ export const useStore = create<StoreState>((set) => ({
   errorOrders: null,
   setAccount: (account) => set({ account }),
   setMarketStatus: (marketStatus) => set({ marketStatus }),
-  addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+  addMessage: (message) =>
+    set((state) => ({ messages: [...state.messages, message] })),
   clearMessages: () => set({ messages: [] }),
   setTrades: (trades) => set({ trades }),
   addTrade: (trade) => set((state) => ({ trades: [...state.trades, trade] })),
@@ -102,7 +103,14 @@ const socket = new WebSocket('ws://localhost:8000/ws');
 
 socket.onmessage = (event) => {
   const message = JSON.parse(event.data);
-  const { addMessage, setPositions, setOrders, addTrade, setAccount, setMarketStatus } = useStore.getState();
+  const {
+    addMessage,
+    setPositions,
+    setOrders,
+    addTrade,
+    setAccount,
+    setMarketStatus,
+  } = useStore.getState();
 
   if (message.type === 'log') {
     addMessage(message.message);

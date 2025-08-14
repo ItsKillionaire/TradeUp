@@ -14,151 +14,180 @@ import Backtester from './Backtester';
 import packageJson from '../package.json';
 
 const Dashboard: React.FC = () => {
-    const {
-        setAccount,
-        setTrades,
-        setPositions,
-        setOrders,
-        setLoadingAccount,
-        setErrorAccount,
-        setLoadingTrades,
-        setErrorTrades,
-        setLoadingPositions,
-        setErrorPositions,
-        setLoadingOrders,
-        setErrorOrders,
-    } = useStore();
+  const {
+    setAccount,
+    setTrades,
+    setPositions,
+    setOrders,
+    setLoadingAccount,
+    setErrorAccount,
+    setLoadingTrades,
+    setErrorTrades,
+    setLoadingPositions,
+    setErrorPositions,
+    setLoadingOrders,
+    setErrorOrders,
+  } = useStore();
 
-    useEffect(() => {
-        const fetchAccountData = async () => {
-            setLoadingAccount(true);
-            try {
-                const response = await apiClient.get('/account');
-                setAccount(response.data);
-            } catch (error) {
-                setErrorAccount('Failed to fetch account information.');
-            } finally {
-                setLoadingAccount(false);
-            }
-        };
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      setLoadingAccount(true);
+      try {
+        const response = await apiClient.get('/account');
+        setAccount(response.data);
+      } catch (error) {
+        setErrorAccount('Failed to fetch account information.');
+      } finally {
+        setLoadingAccount(false);
+      }
+    };
 
-        const fetchPositionsData = async () => {
-            setLoadingPositions(true);
-            try {
-                const response = await apiClient.get('/positions');
-                setPositions(response.data);
-            } catch (error) {
-                setErrorPositions('Failed to fetch positions.');
-            } finally {
-                setLoadingPositions(false);
-            }
-        };
+    const fetchPositionsData = async () => {
+      setLoadingPositions(true);
+      try {
+        const response = await apiClient.get('/positions');
+        setPositions(response.data);
+      } catch (error) {
+        setErrorPositions('Failed to fetch positions.');
+      } finally {
+        setLoadingPositions(false);
+      }
+    };
 
-        const fetchOrdersData = async () => {
-            setLoadingOrders(true);
-            try {
-                const response = await apiClient.get('/orders');
-                setOrders(response.data);
-            } catch (error) {
-                setErrorOrders('Failed to fetch orders.');
-            } finally {
-                setLoadingOrders(false);
-            }
-        };
+    const fetchOrdersData = async () => {
+      setLoadingOrders(true);
+      try {
+        const response = await apiClient.get('/orders');
+        setOrders(response.data);
+      } catch (error) {
+        setErrorOrders('Failed to fetch orders.');
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
 
-        const fetchTradesData = async () => {
-            setLoadingTrades(true);
-            try {
-                const response = await apiClient.get('/trades');
-                setTrades(response.data);
-            } catch (error) {
-                setErrorTrades('Failed to fetch trade history.');
-            } finally {
-                setLoadingTrades(false);
-            }
-        };
+    const fetchTradesData = async () => {
+      setLoadingTrades(true);
+      try {
+        const response = await apiClient.get('/trades');
+        setTrades(response.data);
+      } catch (error) {
+        setErrorTrades('Failed to fetch trade history.');
+      } finally {
+        setLoadingTrades(false);
+      }
+    };
 
-        fetchAccountData();
-        fetchPositionsData();
-        fetchOrdersData();
-        fetchTradesData();
-    }, [setAccount, setLoadingAccount, setErrorAccount, setPositions, setLoadingPositions, setErrorPositions, setOrders, setLoadingOrders, setErrorOrders, setTrades, setLoadingTrades, setErrorTrades]);
+    fetchAccountData();
+    fetchPositionsData();
+    fetchOrdersData();
+    fetchTradesData();
+  }, [
+    setAccount,
+    setLoadingAccount,
+    setErrorAccount,
+    setPositions,
+    setLoadingPositions,
+    setErrorPositions,
+    setOrders,
+    setLoadingOrders,
+    setErrorOrders,
+    setTrades,
+    setLoadingTrades,
+    setErrorTrades,
+  ]);
 
-    return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom sx={{
-                mb: 4,
-                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                animation: 'fadeIn 2s ease-in-out',
-                '@keyframes fadeIn': {
-                    '0%': {
-                        opacity: 0,
-                        transform: 'translateY(-20px)'
-                    },
-                    '100%': {
-                        opacity: 1,
-                        transform: 'translateY(0)'
-                    }
-                }
-            }}>
-                TradeUp
-            </Typography>
-            <Grid container spacing={3}>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <MarketStatus />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <AccountInfo />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Controls />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <OpenPositions />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <Logs />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <RecentOrders />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <TradeHistory />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <AITrader />
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Backtester />
-                    </Paper>
-                </Grid>
-            </Grid>
-            <Box sx={{ pt: 4, textAlign: 'center', color: 'text.secondary' }}>
-                <Typography variant="body2">
-                    Version: {packageJson.version}
-                </Typography>
-            </Box>
-        </Box>
-    );
+  return (
+    <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{
+          mb: 4,
+          background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          animation: 'fadeIn 2s ease-in-out',
+          '@keyframes fadeIn': {
+            '0%': {
+              opacity: 0,
+              transform: 'translateY(-20px)',
+            },
+            '100%': {
+              opacity: 1,
+              transform: 'translateY(0)',
+            },
+          },
+        }}
+      >
+        TradeUp
+      </Typography>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <MarketStatus />
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <AccountInfo />
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <Controls />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={8}>
+          <Paper
+            sx={{
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+            }}
+          >
+            <OpenPositions />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Paper
+            sx={{
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+            }}
+          >
+            <Logs />
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <RecentOrders />
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <TradeHistory />
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <AITrader />
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <Backtester />
+          </Paper>
+        </Grid>
+      </Grid>
+      <Box sx={{ pt: 4, textAlign: 'center', color: 'text.secondary' }}>
+        <Typography variant="body2">Version: {packageJson.version}</Typography>
+      </Box>
+    </Box>
+  );
 };
 
 export default Dashboard;

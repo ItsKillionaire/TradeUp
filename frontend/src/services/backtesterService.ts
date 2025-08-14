@@ -25,7 +25,9 @@ export interface BacktestResult {
   error?: string;
 }
 
-export const runBacktest = async (params: BacktestParams): Promise<BacktestResult> => {
+export const runBacktest = async (
+  params: BacktestParams
+): Promise<BacktestResult> => {
   const response = await fetch(`${API_URL}/api/backtest`, {
     method: 'POST',
     headers: {

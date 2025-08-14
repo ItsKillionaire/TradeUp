@@ -12,18 +12,23 @@ export interface TrainResult {
   error?: string;
 }
 
-export const trainAIModel = async (params: TrainParams): Promise<TrainResult> => {
+export const trainAIModel = async (
+  params: TrainParams
+): Promise<TrainResult> => {
   const queryString = new URLSearchParams();
   queryString.append('symbol', params.symbol);
   if (params.start_date) queryString.append('start_date', params.start_date);
   if (params.end_date) queryString.append('end_date', params.end_date);
 
-  const response = await fetch(`${API_URL}/api/strategy/ai/train?${queryString.toString()}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetch(
+    `${API_URL}/api/strategy/ai/train?${queryString.toString()}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorData = await response.json();
