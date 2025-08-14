@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+import asyncio
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.services.alpaca import AlpacaService
 from app.core.strategy_manager import StrategyManager
@@ -67,20 +68,24 @@ def get_strategy_status():
 
 
 @router.post("/strategy/ai/train")
-def train_ai_strategy(request: Request, symbol: str, start_date: str = None, end_date: str = None):
+async def train_ai_strategy(
+    request: Request,
+    symbol: str,
+    start_date: str = None,
+    end_date: str = None,
+):
     strategy_manager = request.app.state.strategy_manager
     try:
-        ai_strategy = strategy_manager.get_strategy_instance("AI Strategy")
+        ai_strategy = strategy_manager.get_strategy_instance("ai_strategy")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-    result = ai_strategy.train(symbol, start_date=start_date, end_date=end_date)
-    if "error" in result:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=result["error"]
-        )
+    async def train_in_background():
+        await asyncio.to_thread(ai_strategy.train, symbol, start_date=start_date, end_date=end_date)
 
-    return {"data": result}
+    asyncio.create_task(train_in_background())
+
+    return {"message": f"AI model training started for {symbol} in the background."}
 
 
 @router.get("/strategy/available")

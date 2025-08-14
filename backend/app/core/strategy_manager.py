@@ -9,12 +9,13 @@ from sqlalchemy.orm import Session
 
 class StrategyManager:
     def __init__(
-        self, alpaca_service, risk_manager, telegram_service, google_sheets_service
+        self, alpaca_service, risk_manager, telegram_service, google_sheets_service, connection_manager
     ):
         self.alpaca_service = alpaca_service
         self.risk_manager = risk_manager
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
+        self.connection_manager = connection_manager
         self.active_strategies = []
         self._strategy_classes = self._discover_strategies()
         logging.info(f"Discovered {len(self._strategy_classes)} strategies.")
@@ -48,6 +49,7 @@ class StrategyManager:
             self.risk_manager,
             self.telegram_service,
             self.google_sheets_service,
+            self.connection_manager,
             symbol=symbol,
             **kwargs,
         )

@@ -47,7 +47,7 @@ async def startup_event():
     telegram_service = TelegramService()
     google_sheets_service = GoogleSheetsService()
     app.state.strategy_manager = StrategyManager(
-        alpaca_service, risk_manager, telegram_service, google_sheets_service
+        alpaca_service, risk_manager, telegram_service, google_sheets_service, manager
     )
     await alpaca_service.start_stream(app.state.strategy_manager)
 

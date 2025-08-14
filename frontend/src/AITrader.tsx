@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   trainAIModel,
   TrainParams,
@@ -13,6 +13,8 @@ import {
   Grid,
   CircularProgress,
   Alert,
+  LinearProgress,
+  Box
 } from '@mui/material';
 
 const AITrader: React.FC = () => {
@@ -24,6 +26,34 @@ const AITrader: React.FC = () => {
   const [result, setResult] = useState<TrainResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trainingStatus, setTrainingStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8000/ws');
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'training_status') {
+        setTrainingStatus(message.data.status);
+        if (message.data.error) {
+          setError(message.data.status);
+          setLoading(false);
+        }
+        if (message.data.status === 'Training complete!') {
+          setLoading(false);
+          setResult({
+            message: message.data.status,
+            accuracy: message.data.accuracy,
+            error: undefined,
+          });
+        }
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setParams({
@@ -32,17 +62,15 @@ const AITrader: React.FC = () => {
     });
   };
 
-  const handleTrainModel = async () => {
+  const handleTrainModel = () => {
     setLoading(true);
     setError(null);
     setResult(null);
-    try {
-      const data = await trainAIModel(params);
-      setResult(data);
-    } catch (err: any) {
+    setTrainingStatus("Starting training...");
+    trainAIModel(params).catch((err) => {
       setError(err.message || 'An unknown error occurred.');
-    }
-    setLoading(false);
+      setLoading(false);
+    });
   };
 
   return (
@@ -59,6 +87,7 @@ const AITrader: React.FC = () => {
               value={params.symbol}
               onChange={handleChange}
               fullWidth
+              disabled={loading}
             />
           </Grid>
           <Grid item xs={12} sm={3}>
@@ -70,6 +99,7 @@ const AITrader: React.FC = () => {
               onChange={handleChange}
               InputLabelProps={{ shrink: true }}
               fullWidth
+              disabled={loading}
             />
           </Grid>
           <Grid item xs={12} sm={3}>
@@ -81,6 +111,7 @@ const AITrader: React.FC = () => {
               onChange={handleChange}
               InputLabelProps={{ shrink: true }}
               fullWidth
+              disabled={loading}
             />
           </Grid>
           <Grid item xs={12} sm={2}>
@@ -96,6 +127,18 @@ const AITrader: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
+
+      {loading && (
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Training in Progress...
+          </Typography>
+          <Box sx={{ width: '100%' }}>
+            <LinearProgress />
+          </Box>
+          <Typography sx={{ mt: 1 }}>{trainingStatus}</Typography>
+        </Paper>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>

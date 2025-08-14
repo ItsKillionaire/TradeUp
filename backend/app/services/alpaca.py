@@ -55,7 +55,7 @@ class AlpacaService:
     def get_bars(self, symbol, timeframe, start=None, end=None, limit=None):
         try:
             request_params = {
-                "symbol_or_symbols": symbol,
+                "symbol": symbol,
                 "timeframe": timeframe,
                 "start": start,
                 "end": end,
