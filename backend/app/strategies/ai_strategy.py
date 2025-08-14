@@ -133,9 +133,8 @@ class AIStrategy(BaseStrategy):
     def train(self, symbol, timeframe="1Day", start_date=None, end_date=None):
         logging.info(f"Starting Advanced AI model training for {symbol}...")
         try:
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": "Fetching historical data..."}}
-            )
+            import pandas_ta as ta
+            
             logging.info("Fetching bars...")
             bars = self.alpaca_service.get_bars(
                 symbol, timeframe, start=start_date, end=end_date
@@ -143,19 +142,10 @@ class AIStrategy(BaseStrategy):
             logging.info(f"Fetched {len(bars)} bars.")
             if len(bars) < 100:
                 logging.error("Not enough historical data to train the model.")
-                self.message_queue.put(
-                    {"type": "training_status", "data": {"status": "Error: Not enough data.", "error": True}}
-                )
                 return {"error": "Not enough data."}
 
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": "Preparing features..."}}
-            )
             logging.info("Preparing features...")
             features = self._prepare_features(bars)
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": "Preparing labels..."}}
-            )
             logging.info("Preparing labels...")
             labels = self._prepare_labels(bars)
 
@@ -165,22 +155,17 @@ class AIStrategy(BaseStrategy):
 
             if len(features) == 0:
                 logging.error("Feature preparation resulted in empty data.")
-                self.message_queue.put(
-                    {"type": "training_status", "data": {"status": "Error: Could not prepare features.", "error": True}}
-                )
                 return {"error": "Could not prepare features."}
 
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": "Splitting data..."}}
-            )
             logging.info("Splitting data...")
             X_train, X_test, y_train, y_test = train_test_split(
                 features, labels, test_size=0.2, random_state=42, stratify=labels
             )
+            logging.info(f"X_train shape: {X_train.shape}")
+            logging.info(f"X_test shape: {X_test.shape}")
+            logging.info(f"y_train shape: {y_train.shape}")
+            logging.info(f"y_test shape: {y_test.shape}")
 
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": "Training model..."}}
-            )
             logging.info("Training model...")
             self.model = xgb.XGBClassifier(
                 objective="binary:logistic",
@@ -194,24 +179,15 @@ class AIStrategy(BaseStrategy):
             )
             self.model.fit(X_train, y_train)
 
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": "Calculating accuracy..."}}
-            )
             logging.info("Calculating accuracy...")
             accuracy = self.model.score(X_test, y_test)
             logging.info(f"Model training complete. Accuracy: {accuracy:.2f}")
             self._save_model()
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": "Training complete!", "accuracy": accuracy, "error": False}}
-            )
             return {"message": "Training successful", "accuracy": accuracy}
 
         except Exception as e:
             logging.error(f"An error occurred during training: {e}")
             logging.error(traceback.format_exc())
-            self.message_queue.put(
-                {"type": "training_status", "data": {"status": f"Error: {e}", "error": True}}
-            )
             return {"error": str(e)}
 
     def generate_signals(self, bars: pd.DataFrame) -> pd.DataFrame:

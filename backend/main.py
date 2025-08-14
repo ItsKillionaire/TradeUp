@@ -1,5 +1,4 @@
 import logging
-import queue
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +14,7 @@ from app.core.risk_manager import RiskManager
 from app.services.telegram import TelegramService
 from app.services.google_sheets import GoogleSheetsService
 from app.core.market_watcher import watch_market_status
+from app.core.queue import message_queue
 
 trade.Base.metadata.create_all(bind=engine)
 
@@ -22,7 +22,7 @@ setup_logging()
 
 app = FastAPI()
 
-message_queue = queue.Queue()
+
 
 alpaca_service = AlpacaService()
 

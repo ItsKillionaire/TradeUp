@@ -1,7 +1,5 @@
 import logging
-from app.core.connection_manager import manager
-import asyncio
-
+from app.core.queue import message_queue
 
 class WebSocketLoggingHandler(logging.Handler):
     def __init__(self):
@@ -9,6 +7,4 @@ class WebSocketLoggingHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        asyncio.create_task(
-            manager.broadcast_json({"type": "log", "message": log_entry})
-        )
+        message_queue.put({"type": "log", "message": log_entry})
