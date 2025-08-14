@@ -1,5 +1,3 @@
-
-
 import { create } from 'zustand';
 import axios from 'axios';
 
@@ -31,7 +29,6 @@ interface StoreState {
   errorPositions: string | null;
   loadingOrders: boolean;
   errorOrders: string | null;
-  loggedIn: boolean;
   setAccount: (account: any) => void;
   setMarketStatus: (marketStatus: MarketStatus) => void;
   addMessage: (message: string) => void;
@@ -50,7 +47,6 @@ interface StoreState {
   setErrorPositions: (error: string | null) => void;
   setLoadingOrders: (loading: boolean) => void;
   setErrorOrders: (error: string | null) => void;
-  login: (username: string, password: string) => Promise<void>;
   fetchMarketStatus: () => Promise<void>;
 }
 
@@ -71,7 +67,6 @@ export const useStore = create<StoreState>((set) => ({
   errorPositions: null,
   loadingOrders: true,
   errorOrders: null,
-  loggedIn: false,
   setAccount: (account) => set({ account }),
   setMarketStatus: (marketStatus) => set({ marketStatus }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
@@ -90,21 +85,6 @@ export const useStore = create<StoreState>((set) => ({
   setErrorPositions: (error) => set({ errorPositions: error }),
   setLoadingOrders: (loading) => set({ loadingOrders: loading }),
   setErrorOrders: (error) => set({ errorOrders: error }),
-  login: async (username, password) => {
-    try {
-      // In a real application, you would make an API call here
-      // For now, we'll simulate a successful login
-      if (username === 'user' && password === 'password') {
-        set({ loggedIn: true });
-        console.log('Login successful');
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    }
-  },
   fetchMarketStatus: async () => {
     set({ loadingMarketStatus: true });
     try {
@@ -112,9 +92,29 @@ export const useStore = create<StoreState>((set) => ({
       set({ marketStatus: response.data, errorMarketStatus: null });
     } catch (error) {
       set({ errorMarketStatus: 'Failed to fetch market status.' });
-      console.error('Failed to fetch market status:', error);
     } finally {
       set({ loadingMarketStatus: false });
     }
   },
 }));
+
+const socket = new WebSocket('ws://localhost:8000/ws');
+
+socket.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  const { addMessage, setPositions, setOrders, addTrade, setAccount, setMarketStatus } = useStore.getState();
+
+  if (message.type === 'log') {
+    addMessage(message.message);
+  } else if (message.type === 'positions_update') {
+    setPositions(message.data);
+  } else if (message.type === 'orders_update') {
+    setOrders(message.data);
+  } else if (message.type === 'trade_update') {
+    addTrade(message.data);
+  } else if (message.type === 'account_update') {
+    setAccount(message.data);
+  } else if (message.type === 'market_status_update') {
+    setMarketStatus(message.data);
+  }
+};

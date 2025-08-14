@@ -10,11 +10,5 @@ class AdaptiveStrategy(BaseStrategy):
         pass
 
     async def run_on_trade(self, trade):
-        # Implement real-time logic here
         pass
         logging.info(f"Running Adaptive Strategy for {symbol}. (Placeholder for ML integration)")
-        # In a real scenario, this would involve:
-        # 1. Fetching real-time data
-        # 2. Preprocessing data and generating features
-        # 3. Running a trained ML model to get a signal
-        # 4. Executing trades based on the signal

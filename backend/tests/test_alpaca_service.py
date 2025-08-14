@@ -37,7 +37,6 @@ async def test_get_account_info_success(alpaca_service, mock_alpaca_api):
 async def test_get_account_info_failure(alpaca_service, mock_alpaca_api):
     mock_alpaca_api.get_account.side_effect = Exception("API Error")
 
-    # Mock the broadcast_json method of the manager
     with patch('app.core.connection_manager.manager.broadcast_json', new_callable=AsyncMock) as mock_broadcast_json:
         with pytest.raises(HTTPException) as exc_info:
             await alpaca_service.get_account_info()

@@ -194,7 +194,7 @@ class AIStrategy(BaseStrategy):
                     order_class='bracket', take_profit={'limit_price': round(take_profit_price, 2)},
                     stop_loss={'stop_price': round(stop_loss_price, 2)}
                 )
-        elif prediction == 0 and current_position_qty > 0: # Sell signal
+        elif prediction == 0 and current_position_qty > 0:
             logging.info(f"AI TRADE SIGNAL: Sell {symbol}. Closing position.")
             self.alpaca_service.api.close_position(symbol)
         else:

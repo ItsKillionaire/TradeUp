@@ -53,7 +53,6 @@ from app.strategies.base import get_strategy
 
 @router.post("/strategy/ai/train")
 def train_ai_strategy(symbol: str, start_date: str = None, end_date: str = None):
-    """Triggers the training of the AI model."""
     ai_strategy = get_strategy("AI Strategy")
     if not ai_strategy:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI Strategy not found.")

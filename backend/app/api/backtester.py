@@ -4,8 +4,6 @@ from ..backtester.backtester import Backtester
 from ..services.alpaca import get_alpaca_service
 from ..strategies.base import get_strategy
 
-print("Backtester router imported")
-
 router = APIRouter()
 
 @router.post("/backtest")

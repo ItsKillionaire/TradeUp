@@ -21,8 +21,6 @@ class MacdStrategy(BaseStrategy):
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
 
-    
-
     async def run(self, symbol, timeframe, db: Session):
         logging.info(f"Running MACD strategy for {symbol}")
         
@@ -81,5 +79,3 @@ class MacdStrategy(BaseStrategy):
             message = f"No signal for {symbol} (MACD cross) or already in position"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
-
-    

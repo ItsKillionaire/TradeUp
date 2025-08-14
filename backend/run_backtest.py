@@ -37,7 +37,6 @@ async def main():
     results = backtester.run(symbol="SPY")
 
     print("Backtest Results:")
-    # Pretty print the json results
     print(json.dumps(results, indent=4))
 
 if __name__ == "__main__":

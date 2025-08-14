@@ -47,8 +47,6 @@ def test_get_bars_failure(data_service, mock_alpaca_api):
     mock_alpaca_api.get_bars.side_effect = Exception("Data fetch error")
 
     with pytest.raises(Exception, match="Data fetch error"):
-        # Assuming DataService.get_bars calls alpaca_api.get_bars
-        # For this test, we'll directly call the mocked api method
         mock_alpaca_api.get_bars("SPY", "1Min", limit=2)
 
     mock_alpaca_api.get_bars.assert_called_once()

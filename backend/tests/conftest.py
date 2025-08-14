@@ -55,8 +55,6 @@ def mock_telegram_service_instance(mock_all_services_and_config):
 
 @pytest.fixture
 def mock_google_sheets_service_instance(mock_all_services_and_config):
-    # This fixture now just returns the mocked instance created in mock_all_services_and_config
-    # We need to re-import the service to get the patched version
     from app.services.google_sheets import GoogleSheetsService
     return GoogleSheetsService()
 

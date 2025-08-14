@@ -21,8 +21,6 @@ class RsiStrategy(BaseStrategy):
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
 
-    
-
     async def run(self, symbol, timeframe, db: Session):
         logging.info(f"Running RSI strategy for {symbol}")
         
@@ -80,5 +78,3 @@ class RsiStrategy(BaseStrategy):
             message = f"No signal for {symbol} (RSI: {latest_rsi:.2f}) or already in position"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
-
-    

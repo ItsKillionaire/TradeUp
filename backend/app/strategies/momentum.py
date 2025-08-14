@@ -31,7 +31,6 @@ class MomentumStrategy(BaseStrategy):
         pass
 
     async def run_on_trade(self, trade):
-        # Implement real-time logic here
         pass
         logging.info(f"Running Momentum strategy for {symbol}")
         

@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,18 +31,15 @@ async def broadcast_updates():
             await manager.broadcast_json({"type": "positions_update", "data": positions})
             await manager.broadcast_json({"type": "orders_update", "data": orders})
         except Exception as e:
-            print(f"Error broadcasting updates: {e}")
+            logging.error(f"Error broadcasting updates: {e}")
         await asyncio.sleep(5)
-
-from app.core.market_watcher import watch_market_status
 
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_updates())
     asyncio.create_task(watch_market_status())
-    alpaca_service = AlpacaService()
     account_info = await alpaca_service.get_account_info()
-    risk_manager = RiskManager(account_equity=float(account_info.equity))
+    risk_manager = RiskManager(account_equity=float(account_info['equity']))
     telegram_service = TelegramService()
     google_sheets_service = GoogleSheetsService()
     app.state.strategy_manager = StrategyManager(alpaca_service, risk_manager, telegram_service, google_sheets_service)
@@ -53,7 +51,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

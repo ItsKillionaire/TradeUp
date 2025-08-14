@@ -5,7 +5,6 @@ router = APIRouter()
 
 @router.get("/status")
 def get_market_status():
-    """Returns the current market status from Alpaca."""
     alpaca_service = AlpacaService()
     clock = alpaca_service.get_clock()
     return {

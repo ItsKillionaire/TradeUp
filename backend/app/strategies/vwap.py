@@ -37,7 +37,7 @@ class VwapStrategy(BaseStrategy):
         bars = self.alpaca_service.get_bars(
             symbol,
             timeframe,
-            limit=100 # VWAP is typically calculated intraday
+            limit=100
         ).df
         logging.info(f"Fetched {len(bars)} bars for {symbol} with timeframe {timeframe}.")
 

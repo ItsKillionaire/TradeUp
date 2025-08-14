@@ -29,7 +29,7 @@ class AlpacaService:
         try:
             account = self.api.get_account()
             await manager.broadcast_json({"type": "account_update", "data": account._raw})
-            return account
+            return account._raw
         except tradeapi.rest.APIError as e:
             if e.status_code == 403:
                 logging.warning("Alpaca API keys are invalid or missing. Please check your .env file.")
@@ -157,9 +157,6 @@ class AlpacaService:
 
         self.stream.subscribe_trades(trade_handler, '*')
         asyncio.create_task(self.stream._run_forever())
-
-# Singleton instance of AlpacaService
-alpaca_service = AlpacaService()
 
 def get_alpaca_service():
     return alpaca_service

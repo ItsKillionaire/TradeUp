@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
-import axios from 'axios';
 import { Typography, Box, Grid, Paper } from '@mui/material';
 
 import Controls from './Controls';
-import { useStore } from './store';
+import { useStore, apiClient } from './store';
 import AccountInfo from './AccountInfo';
 import Logs from './Logs';
 import TradeHistory from './TradeHistory';
@@ -17,12 +16,9 @@ import packageJson from '../package.json';
 const Dashboard: React.FC = () => {
     const {
         setAccount,
-        addMessage,
         setTrades,
-        addTrade,
         setPositions,
         setOrders,
-        setMarketStatus,
         setLoadingAccount,
         setErrorAccount,
         setLoadingTrades,
@@ -34,82 +30,59 @@ const Dashboard: React.FC = () => {
     } = useStore();
 
     useEffect(() => {
-        const ws = new WebSocket(`ws://localhost:8000/ws`);
-
-        ws.onopen = () => {
-            axios.get('/api/account')
-                .then((response: any) => {
-                    setAccount(response.data._raw);
-                    setLoadingAccount(false);
-                })
-                .catch((error: any) => {
-                    console.error('Error fetching account data:', error);
-                    setErrorAccount('Failed to fetch account data.');
-                    setLoadingAccount(false);
-                });
-
-            axios.get('/api/trades')
-                .then((response: any) => {
-                    setTrades(response.data);
-                    setLoadingTrades(false);
-                })
-                .catch((error: any) => {
-                    console.error('Error fetching trades data:', error);
-                    setErrorTrades('Failed to fetch trades data.');
-                    setLoadingTrades(false);
-                });
-
-            axios.get('/api/positions')
-                .then((response: any) => {
-                    setPositions(response.data);
-                    setLoadingPositions(false);
-                })
-                .catch((error: any) => {
-                    console.error('Error fetching positions data:', error);
-                    setErrorPositions('Failed to fetch positions data.');
-                    setLoadingPositions(false);
-                });
-
-            axios.get('/api/orders')
-                .then((response: any) => {
-                    setOrders(response.data);
-                    setLoadingOrders(false);
-                })
-                .catch((error: any) => {
-                    console.error('Error fetching orders data:', error);
-                    setErrorOrders('Failed to fetch orders data.');
-                    setLoadingOrders(false);
-                });
-        };
-
-        ws.onmessage = (event) => {
+        const fetchAccountData = async () => {
+            setLoadingAccount(true);
             try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'account_update') {
-                    setAccount(data.data._raw);
-                } else if (data.type === 'positions_update') {
-                    setPositions(data.data);
-                } else if (data.type === 'orders_update') {
-                    setOrders(data.data);
-                } else if (data.type === 'trades_update') {
-                    addTrade(data.data);
-                } else if (data.type === 'market_status_update') {
-                    setMarketStatus(data.data);
-                } else if (data.type === 'chat' || data.type === 'log' || data.type === 'error') {
-                    addMessage(data.message);
-                } else {
-                    addMessage(JSON.stringify(data));
-                }
+                const response = await apiClient.get('/account');
+                setAccount(response.data);
             } catch (error) {
-                console.log("Raw WebSocket data:", event.data);
-                addMessage(event.data);
+                setErrorAccount('Failed to fetch account information.');
+            } finally {
+                setLoadingAccount(false);
             }
         };
 
-        return () => {
-            ws.close();
+        const fetchPositionsData = async () => {
+            setLoadingPositions(true);
+            try {
+                const response = await apiClient.get('/positions');
+                setPositions(response.data);
+            } catch (error) {
+                setErrorPositions('Failed to fetch positions.');
+            } finally {
+                setLoadingPositions(false);
+            }
         };
-    }, [setAccount, addMessage, setTrades, setLoadingAccount, setErrorAccount, setLoadingTrades, setErrorTrades, setPositions, setOrders, setLoadingPositions, setErrorPositions, setLoadingOrders, setErrorOrders]);
+
+        const fetchOrdersData = async () => {
+            setLoadingOrders(true);
+            try {
+                const response = await apiClient.get('/orders');
+                setOrders(response.data);
+            } catch (error) {
+                setErrorOrders('Failed to fetch orders.');
+            } finally {
+                setLoadingOrders(false);
+            }
+        };
+
+        const fetchTradesData = async () => {
+            setLoadingTrades(true);
+            try {
+                const response = await apiClient.get('/trades');
+                setTrades(response.data);
+            } catch (error) {
+                setErrorTrades('Failed to fetch trade history.');
+            } finally {
+                setLoadingTrades(false);
+            }
+        };
+
+        fetchAccountData();
+        fetchPositionsData();
+        fetchOrdersData();
+        fetchTradesData();
+    }, [setAccount, setLoadingAccount, setErrorAccount, setPositions, setLoadingPositions, setErrorPositions, setOrders, setLoadingOrders, setErrorOrders, setTrades, setLoadingTrades, setErrorTrades]);
 
     return (
         <Box sx={{ flexGrow: 1, p: 3 }}>

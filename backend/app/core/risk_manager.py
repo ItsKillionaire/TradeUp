@@ -47,14 +47,6 @@ class RiskManager:
         return atr
 
     def calculate_stop_loss(self, entry_price, atr_value, atr_multiplier=2.0):
-        """
-        Calculates the stop loss price using the ATR.
-
-        :param entry_price: The price at which the asset is to be bought.
-        :param atr_value: The current ATR value for the asset.
-        :param atr_multiplier: The multiplier to apply to the ATR.
-        :return: The calculated stop loss price.
-        """
         if atr_value is None or np.isnan(atr_value) or atr_value <= 0:
             logging.warning("Invalid ATR value, cannot calculate dynamic stop loss.")
             # Fallback to a fixed percentage if ATR is not available

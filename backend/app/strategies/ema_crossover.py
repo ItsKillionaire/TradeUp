@@ -32,7 +32,6 @@ class EmaCrossoverStrategy(BaseStrategy):
         pass
 
     async def run_on_trade(self, trade):
-        # Implement real-time logic here
         pass
         logging.info(f"Running EMA Crossover strategy for {symbol}")
         

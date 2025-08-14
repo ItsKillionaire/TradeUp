@@ -54,7 +54,6 @@ const Controls: React.FC = () => {
                 setBotStatus('offline');
             })
             .catch(error => {
-                console.error('Error stopping strategy:', error);
             });
     };
 

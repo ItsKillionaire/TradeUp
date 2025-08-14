@@ -86,10 +86,6 @@ class StrategyManager:
             }
         }
 
-    import logging
-
-# ... (rest of the file)
-
     def get_strategy_instance(self, name: str, **kwargs) -> BaseStrategy:
         strategy_info = self._strategy_classes.get(name)
         if not strategy_info:

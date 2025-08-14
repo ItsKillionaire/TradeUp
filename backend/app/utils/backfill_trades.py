@@ -62,6 +62,5 @@ def backfill_trades_from_alpaca():
         db.close()
 
 if __name__ == "__main__":
-    # Recreate tables if they don't exist (for standalone script execution)
     Base.metadata.create_all(bind=engine)
     backfill_trades_from_alpaca()

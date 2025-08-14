@@ -82,9 +82,7 @@ class MarketScanner:
         return promising_symbols
 
     def run_scan(self):
-        """Runs the full market scan process."""
         tradable_symbols = self.get_tradable_assets()
-        # For development, let's not scan all 5000+ symbols. Let's take a smaller sample.
-        sample_symbols = tradable_symbols[:200] 
+        sample_symbols = tradable_symbols[:200]
         results = self.scan(sample_symbols)
         return results

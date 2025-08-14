@@ -21,4 +21,4 @@ async def watch_market_status():
             })
         except Exception as e:
             logger.error(f"Error fetching market status: {e}")
-        await asyncio.sleep(60) # Fetch every 60 seconds
+        await asyncio.sleep(60)

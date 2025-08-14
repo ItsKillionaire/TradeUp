@@ -33,7 +33,6 @@ class IchimokuCloudStrategy(BaseStrategy):
         pass
 
     async def run_on_trade(self, trade):
-        # Implement real-time logic here
         pass
         logging.info(f"Running Ichimoku Cloud strategy for {symbol}")
         

@@ -14,30 +14,22 @@ class SmaCrossover(BaseStrategy):
         super().__init__(alpaca_service, risk_manager, "SMA Crossover")
         self.short_window = short_window
         self.long_window = long_window
-        # trade_percentage is now deprecated in favor of the risk manager
-        # self.trade_percentage = trade_percentage 
         self.take_profit_pct = take_profit_pct
-        # stop_loss_pct is now deprecated in favor of the risk manager
-        # self.stop_loss_pct = stop_loss_pct
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
 
     def generate_signals(self, bars):
-        """Generates signals for the SMA Crossover strategy."""
         if len(bars) < self.long_window:
             logging.warning(f"Not enough data to generate signals. Need {self.long_window}, have {len(bars)}.")
-            # Return a DataFrame with no signals
             signals = pd.DataFrame(index=bars.index)
             signals['signal'] = 0
             signals['position'] = 0
             return signals
 
-        # Calculate SMAs
         signals = pd.DataFrame(index=bars.index)
         signals['short_mavg'] = bars['close'].rolling(self.short_window, min_periods=1).mean()
         signals['long_mavg'] = bars['close'].rolling(self.long_window, min_periods=1).mean()
 
-        # Generate signals
         signals['signal'] = 0
         signals.loc[signals.index[self.short_window:], 'signal'] = np.where(
             signals['short_mavg'][self.short_window:] > signals['long_mavg'][self.short_window:], 1, 0
@@ -49,7 +41,7 @@ class SmaCrossover(BaseStrategy):
     async def run(self, symbol, timeframe, db: Session):
         logging.info(f"Running SMA Crossover strategy for {symbol} with Risk Management")
         
-        bars_data = self.alpaca_service.get_bars(symbol, timeframe, limit=self.long_window + 20) # Fetch more for ATR
+        bars_data = self.alpaca_service.get_bars(symbol, timeframe, limit=self.long_window + 20)
         if not bars_data or len(bars_data.df) < self.long_window:
             logging.warning(f"Not enough data for {symbol} to run strategy.")
             return
@@ -62,16 +54,13 @@ class SmaCrossover(BaseStrategy):
         if latest_position == 1.0 and current_position_qty == 0:
             last_price = bars['close'].iloc[-1]
             
-            # 1. Calculate Stop Loss
             atr = self.risk_manager.calculate_atr(bars)
             stop_loss_price = self.risk_manager.calculate_stop_loss(last_price, atr.iloc[-1])
 
-            # 2. Calculate Position Size
             qty_to_buy = self.risk_manager.calculate_position_size(last_price, stop_loss_price)
 
             if qty_to_buy > 0:
-                # 3. Define Take Profit
-                take_profit_price = last_price + (last_price - stop_loss_price) * 2 # Risk/Reward of 1:2
+                take_profit_price = last_price + (last_price - stop_loss_price) * 2
 
                 message = (
                     f"TRADE SIGNAL: Buy {symbol}.\n"
@@ -131,7 +120,4 @@ class SmaCrossover(BaseStrategy):
             position = self.alpaca_service.api.get_position(symbol)
             return float(position.qty)
         except Exception as e:
-            # The Alpaca API throws an exception if there is no position, which is not ideal.
             return 0
-
-    
