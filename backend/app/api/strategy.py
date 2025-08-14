@@ -66,16 +66,13 @@ def get_strategy_status():
     return {"message": "Strategy manager is online"}
 
 
-from app.strategies.base import get_strategy
-
-
 @router.post("/strategy/ai/train")
-def train_ai_strategy(symbol: str, start_date: str = None, end_date: str = None):
-    ai_strategy = get_strategy("AI Strategy")
-    if not ai_strategy:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="AI Strategy not found."
-        )
+def train_ai_strategy(request: Request, symbol: str, start_date: str = None, end_date: str = None):
+    strategy_manager = request.app.state.strategy_manager
+    try:
+        ai_strategy = strategy_manager.get_strategy_instance("AI Strategy")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
     result = ai_strategy.train(symbol, start_date=start_date, end_date=end_date)
     if "error" in result:
