@@ -121,3 +121,28 @@ class SmaCrossover(BaseStrategy):
             message = f"No signal for {symbol} (SMA Crossover) or already in position"
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
+
+    def generate_signals(self, bars: pd.DataFrame) -> pd.DataFrame:
+        if bars.empty:
+            return bars
+
+        bars.ta.sma(length=self.fast_period, append=True)
+        bars.ta.sma(length=self.slow_period, append=True)
+
+        fast_sma_col = f"SMA_{self.fast_period}"
+        slow_sma_col = f"SMA_{self.slow_period}"
+
+        # Generate buy/sell signals
+        bars["signal"] = 0
+        bars.loc[
+            (bars[fast_sma_col] > bars[slow_sma_col])
+            & (bars[fast_sma_col].shift(1) < bars[slow_sma_col].shift(1)),
+            "signal",
+        ] = 1
+        bars.loc[
+            (bars[fast_sma_col] < bars[slow_sma_col])
+            & (bars[fast_sma_col].shift(1) > bars[slow_sma_col].shift(1)),
+            "signal",
+        ] = -1
+
+        return bars

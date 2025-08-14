@@ -2,6 +2,7 @@ import logging
 from sqlalchemy.orm import Session
 from app.strategies.base import BaseStrategy
 import pandas_ta as ta
+import pandas as pd
 
 
 class EmaCrossoverStrategy(BaseStrategy):
@@ -40,3 +41,28 @@ class EmaCrossoverStrategy(BaseStrategy):
             logging.info(f"Buy signal for {symbol} (EMA Crossover)")
         elif latest_fast_ema < latest_slow_ema and previous_fast_ema >= previous_slow_ema:
             logging.info(f"Sell signal for {symbol} (EMA Crossover)")
+
+    def generate_signals(self, bars: pd.DataFrame) -> pd.DataFrame:
+        if bars.empty:
+            return bars
+
+        bars.ta.ema(length=self.fast_period, append=True)
+        bars.ta.ema(length=self.slow_period, append=True)
+
+        fast_ema_col = f"EMA_{self.fast_period}"
+        slow_ema_col = f"EMA_{self.slow_period}"
+
+        # Generate buy/sell signals
+        bars["signal"] = 0
+        bars.loc[
+            (bars[fast_ema_col] > bars[slow_ema_col])
+            & (bars[fast_ema_col].shift(1) < bars[slow_ema_col].shift(1)),
+            "signal",
+        ] = 1
+        bars.loc[
+            (bars[fast_ema_col] < bars[slow_ema_col])
+            & (bars[fast_ema_col].shift(1) > bars[slow_ema_col].shift(1)),
+            "signal",
+        ] = -1
+
+        return bars
