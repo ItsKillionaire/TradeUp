@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 import pandas as pd
@@ -9,7 +10,9 @@ from sklearn.metrics import accuracy_score
 from app.strategies.base import BaseStrategy
 import traceback
 
-MODEL_PATH = "./trained_models/ai_strategy_model.joblib"
+# Get the absolute path to the project root
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+MODEL_PATH = os.path.join(PROJECT_ROOT, "trained_models", "ai_strategy_model.joblib")
 
 
 class AIStrategy(BaseStrategy):
@@ -55,15 +58,28 @@ class AIStrategy(BaseStrategy):
         try:
             import pandas_ta as ta
 
-            # A more stable set of indicators
-            common_strategy = ta.CommonStrategy
             features = pd.DataFrame(index=bars.index)
-            features.ta.strategy(common_strategy)
             
-            # Clean up the feature names for compatibility with scikit-learn
-            features.columns = features.columns.str.replace(
-                r"[^A-Za-z0-9_]+", "", regex=True
-            )
+            # Momentum
+            features['rsi'] = ta.rsi(bars.close)
+            features['macd'] = ta.macd(bars.close).iloc[:, 0]
+            features['macds'] = ta.macd(bars.close).iloc[:, 1]
+            features['macdh'] = ta.macd(bars.close).iloc[:, 2]
+            features['stoch_k'] = ta.stoch(bars.high, bars.low, bars.close).iloc[:, 0]
+            features['stoch_d'] = ta.stoch(bars.high, bars.low, bars.close).iloc[:, 1]
+            
+            # Volatility
+            features['bb_upper'] = ta.bbands(bars.close).iloc[:, 0]
+            features['bb_mid'] = ta.bbands(bars.close).iloc[:, 1]
+            features['bb_lower'] = ta.bbands(bars.close).iloc[:, 2]
+            features['atr'] = ta.atr(bars.high, bars.low, bars.close)
+            
+            # Trend
+            features['sma20'] = ta.sma(bars.close, length=20)
+            features['sma50'] = ta.sma(bars.close, length=50)
+            features['ema20'] = ta.ema(bars.close, length=20)
+            features['ema50'] = ta.ema(bars.close, length=50)
+            
             features.dropna(inplace=True)
             return features
         except ImportError:
@@ -117,9 +133,9 @@ class AIStrategy(BaseStrategy):
     def train(self, symbol, timeframe="1Day", start_date=None, end_date=None):
         logging.info(f"Starting Advanced AI model training for {symbol}...")
         try:
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": "Fetching historical data..."}}
-            ))
+            )
             logging.info("Fetching bars...")
             bars = self.alpaca_service.get_bars(
                 symbol, timeframe, start=start_date, end=end_date
@@ -127,19 +143,19 @@ class AIStrategy(BaseStrategy):
             logging.info(f"Fetched {len(bars)} bars.")
             if len(bars) < 100:
                 logging.error("Not enough historical data to train the model.")
-                asyncio.run(self.connection_manager.broadcast_json(
+                self.message_queue.put(
                     {"type": "training_status", "data": {"status": "Error: Not enough data.", "error": True}}
-                ))
+                )
                 return {"error": "Not enough data."}
 
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": "Preparing features..."}}
-            ))
+            )
             logging.info("Preparing features...")
             features = self._prepare_features(bars)
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": "Preparing labels..."}}
-            ))
+            )
             logging.info("Preparing labels...")
             labels = self._prepare_labels(bars)
 
@@ -149,22 +165,22 @@ class AIStrategy(BaseStrategy):
 
             if len(features) == 0:
                 logging.error("Feature preparation resulted in empty data.")
-                asyncio.run(self.connection_manager.broadcast_json(
+                self.message_queue.put(
                     {"type": "training_status", "data": {"status": "Error: Could not prepare features.", "error": True}}
-                ))
+                )
                 return {"error": "Could not prepare features."}
 
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": "Splitting data..."}}
-            ))
+            )
             logging.info("Splitting data...")
             X_train, X_test, y_train, y_test = train_test_split(
                 features, labels, test_size=0.2, random_state=42, stratify=labels
             )
 
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": "Training model..."}}
-            ))
+            )
             logging.info("Training model...")
             self.model = xgb.XGBClassifier(
                 objective="binary:logistic",
@@ -178,24 +194,24 @@ class AIStrategy(BaseStrategy):
             )
             self.model.fit(X_train, y_train)
 
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": "Calculating accuracy..."}}
-            ))
+            )
             logging.info("Calculating accuracy...")
             accuracy = self.model.score(X_test, y_test)
             logging.info(f"Model training complete. Accuracy: {accuracy:.2f}")
             self._save_model()
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": "Training complete!", "accuracy": accuracy, "error": False}}
-            ))
+            )
             return {"message": "Training successful", "accuracy": accuracy}
 
         except Exception as e:
             logging.error(f"An error occurred during training: {e}")
             logging.error(traceback.format_exc())
-            asyncio.run(self.connection_manager.broadcast_json(
+            self.message_queue.put(
                 {"type": "training_status", "data": {"status": f"Error: {e}", "error": True}}
-            ))
+            )
             return {"error": str(e)}
 
     def generate_signals(self, bars: pd.DataFrame) -> pd.DataFrame:

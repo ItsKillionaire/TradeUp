@@ -16,6 +16,7 @@ class BaseStrategy(ABC):
         telegram_service,
         google_sheets_service,
         connection_manager,
+        message_queue,
         symbol: str = None,
         **kwargs,
     ):
@@ -24,6 +25,7 @@ class BaseStrategy(ABC):
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
         self.connection_manager = connection_manager
+        self.message_queue = message_queue
         self.symbol = symbol
         logging.info(f"{self.name} strategy initialized for symbol {self.symbol}.")
 

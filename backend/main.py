@@ -1,4 +1,5 @@
 import logging
+import queue
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +22,8 @@ setup_logging()
 
 app = FastAPI()
 
+message_queue = queue.Queue()
+
 alpaca_service = AlpacaService()
 
 
@@ -37,17 +40,24 @@ async def broadcast_updates():
             logging.error(f"Error broadcasting updates: {e}")
         await asyncio.sleep(5)
 
+async def process_message_queue():
+    while True:
+        if not message_queue.empty():
+            message = message_queue.get()
+            await manager.broadcast_json(message)
+        await asyncio.sleep(0.1)
 
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_updates())
     asyncio.create_task(watch_market_status())
+    asyncio.create_task(process_message_queue())
     account_info = await alpaca_service.get_account_info()
     risk_manager = RiskManager(account_equity=float(account_info["equity"]))
     telegram_service = TelegramService()
     google_sheets_service = GoogleSheetsService()
     app.state.strategy_manager = StrategyManager(
-        alpaca_service, risk_manager, telegram_service, google_sheets_service, manager
+        alpaca_service, risk_manager, telegram_service, google_sheets_service, manager, message_queue
     )
     await alpaca_service.start_stream(app.state.strategy_manager)
 
