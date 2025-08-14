@@ -1,17 +1,8 @@
 import logging
+import pkgutil
+import inspect
 from app.strategies.base import BaseStrategy
-from app.strategies.sma_crossover import SmaCrossover
-from app.strategies.adaptive_strategy import AdaptiveStrategy
-from app.strategies.rsi import RsiStrategy
-from app.strategies.macd import MacdStrategy
-from app.strategies.bollinger_bands import BollingerBandsStrategy
-from app.strategies.ema_crossover import EmaCrossoverStrategy
-from app.strategies.stochastic_oscillator import StochasticOscillatorStrategy
-from app.strategies.ichimoku_cloud import IchimokuCloudStrategy
-from app.strategies.vwap import VwapStrategy
-from app.strategies.mean_reversion import MeanReversionStrategy
-from app.strategies.momentum import MomentumStrategy
-from app.strategies.awesome_oscillator import AwesomeOscillatorStrategy
+import app.strategies
 from typing import Dict, Type, Any
 from sqlalchemy.orm import Session
 
@@ -25,69 +16,26 @@ class StrategyManager:
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
         self.active_strategies = []
+        self._strategy_classes = self._discover_strategies()
+        logging.info(f"Discovered {len(self._strategy_classes)} strategies.")
 
-        self._strategy_classes: Dict[str, Dict[str, Any]] = {
-            "sma_crossover": {
-                "class": SmaCrossover,
-                "display_name": "SMA Crossover",
-                "description": "A simple strategy that generates buy/sell signals based on the crossover of two Simple Moving Averages (SMAs) of different lengths.",
-            },
-            "adaptive_strategy": {
-                "class": AdaptiveStrategy,
-                "display_name": "Adaptive Strategy",
-                "description": "A strategy that adapts to changing market conditions by adjusting its parameters based on market volatility.",
-            },
-            "rsi": {
-                "class": RsiStrategy,
-                "display_name": "RSI",
-                "description": "A momentum oscillator that measures the speed and change of price movements. It is used to identify overbought or oversold conditions.",
-            },
-            "macd": {
-                "class": MacdStrategy,
-                "display_name": "MACD",
-                "description": "A trend-following momentum indicator that shows the relationship between two moving averages of a security's price.",
-            },
-            "bollinger_bands": {
-                "class": BollingerBandsStrategy,
-                "display_name": "Bollinger Bands",
-                "description": "A volatility indicator that consists of a middle band (a simple moving average) and two outer bands that are typically two standard deviations away from the middle band.",
-            },
-            "ema_crossover": {
-                "class": EmaCrossoverStrategy,
-                "display_name": "EMA Crossover",
-                "description": "Similar to the SMA Crossover, but uses Exponential Moving Averages (EMAs) which give more weight to recent prices.",
-            },
-            "stochastic_oscillator": {
-                "class": StochasticOscillatorStrategy,
-                "display_name": "Stochastic Oscillator",
-                "description": "A momentum indicator that compares a particular closing price of a security to a range of its prices over a certain period of time.",
-            },
-            "ichimoku_cloud": {
-                "class": IchimokuCloudStrategy,
-                "display_name": "Ichimoku Cloud",
-                "description": "A collection of indicators that show support and resistance levels, as well as momentum and trend direction.",
-            },
-            "vwap": {
-                "class": VwapStrategy,
-                "display_name": "VWAP",
-                "description": "Volume-Weighted Average Price (VWAP) is a trading benchmark that gives the average price a security has traded at throughout the day, based on both volume and price.",
-            },
-            "mean_reversion": {
-                "class": MeanReversionStrategy,
-                "display_name": "Mean Reversion",
-                "description": "A strategy that assumes that a stock's price will tend to move back to the average price over time.",
-            },
-            "momentum": {
-                "class": MomentumStrategy,
-                "display_name": "Momentum",
-                "description": "A strategy that aims to capitalize on the continuance of existing trends in the market.",
-            },
-            "awesome_oscillator": {
-                "class": AwesomeOscillatorStrategy,
-                "display_name": "Awesome Oscillator",
-                "description": "An indicator used to measure market momentum. It is calculated as the difference between a 34-period and a 5-period simple moving average.",
-            },
-        }
+    def _discover_strategies(self) -> Dict[str, Dict[str, Any]]:
+        strategies = {}
+        for importer, modname, ispkg in pkgutil.iter_modules(app.strategies.__path__):
+            if not ispkg and modname != "base":
+                module = __import__(f"app.strategies.{modname}", fromlist="dummy")
+                for name, obj in inspect.getmembers(module):
+                    if (
+                        inspect.isclass(obj)
+                        and issubclass(obj, BaseStrategy)
+                        and obj is not BaseStrategy
+                    ):
+                        strategies[obj.name] = {
+                            "class": obj,
+                            "display_name": obj.display_name,
+                            "description": obj.description,
+                        }
+        return strategies
 
     def get_strategy_instance(self, name: str, **kwargs) -> BaseStrategy:
         strategy_info = self._strategy_classes.get(name)

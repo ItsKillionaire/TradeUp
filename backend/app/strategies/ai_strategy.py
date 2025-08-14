@@ -11,8 +11,12 @@ MODEL_PATH = "./trained_models/ai_strategy_model.joblib"
 
 
 class AIStrategy(BaseStrategy):
-    def __init__(self, alpaca_service, risk_manager, name="AI Strategy"):
-        super().__init__(alpaca_service, risk_manager, name)
+    name: str = "ai_strategy"
+    display_name: str = "AI Strategy"
+    description: str = "A strategy that uses a trained AI model to generate trading signals."
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.model = self._load_model()
 
     def _load_model(self):

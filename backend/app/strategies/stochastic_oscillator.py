@@ -1,119 +1,43 @@
 import logging
-import pandas as pd
-import pandas_ta as ta
 from sqlalchemy.orm import Session
 from app.strategies.base import BaseStrategy
-from app.services.telegram import TelegramService
-from app.services.google_sheets import GoogleSheetsService
-from app.crud import create_trade
-from app.core.connection_manager import manager
-from sqlalchemy.orm import Session
+import pandas_ta as ta
 
 
 class StochasticOscillatorStrategy(BaseStrategy):
-    def __init__(
-        self,
-        alpaca_service,
-        telegram_service,
-        google_sheets_service,
-        k=14,
-        d=3,
-        smooth_k=3,
-        trade_percentage=0.05,
-        take_profit_pct=0.05,
-        stop_loss_pct=0.02,
-    ):
-        super().__init__(alpaca_service)
-        self.k = k
-        self.d = d
-        self.smooth_k = smooth_k
-        self.trade_percentage = trade_percentage
-        self.take_profit_pct = take_profit_pct
-        self.stop_loss_pct = stop_loss_pct
-        self.telegram_service = telegram_service
-        self.google_sheets_service = google_sheets_service
+    name: str = "stochastic_oscillator"
+    display_name: str = "Stochastic Oscillator"
+    description: str = "A momentum indicator that compares a particular closing price of a security to a range of its prices over a certain period of time."
 
-    async def get_position(self, symbol: str) -> float:
-        try:
-            position = await self.alpaca_service.api.get_position(symbol)
-            return float(position.qty)
-        except Exception as e:
-            logging.warning(f"Could not get position for {symbol}: {e}")
-            return 0.0
+    def __init__(self, *args, k_period=14, d_period=3, overbought=80, oversold=20, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.k_period = k_period
+        self.d_period = d_period
+        self.overbought = overbought
+        self.oversold = oversold
 
     async def run(self, symbol, timeframe, db: Session):
         pass
 
     async def run_on_trade(self, trade):
-        pass
+        symbol = trade.symbol
+        timeframe = "1Day"
         logging.info(f"Running Stochastic Oscillator strategy for {symbol}")
 
-        bars = self.alpaca_service.get_bars(symbol, timeframe, limit=self.k + 5).df
-        logging.info(
-            f"Fetched {len(bars)} bars for {symbol} with timeframe {timeframe}."
-        )
-
-        if len(bars) < self.k:
-            logging.warning(f"Not enough data for {symbol} to run strategy.")
+        bars = self.alpaca_service.get_bars(
+            symbol, timeframe, limit=self.k_period + self.d_period
+        ).df
+        if bars.empty:
             return
 
-        bars.ta.stoch(k=self.k, d=self.d, smooth_k=self.smooth_k, append=True)
-
-        latest_stoch_k = bars[f"STOCHk_{self.k}_{self.d}_{self.smooth_k}"].iloc[-1]
-        latest_stoch_d = bars[f"STOCHd_{self.k}_{self.d}_{self.smooth_k}"].iloc[-1]
-        logging.info(
-            f"Latest Stoch %K: {latest_stoch_k:.2f}, Latest Stoch %D: {latest_stoch_d:.2f}"
+        bars.ta.stoch(
+            k=self.k_period, d=self.d_period, append=True
         )
 
-        current_position = await self.get_position(symbol)
+        latest_k = bars[f"STOCHk_{self.k_period}_{self.d_period}_3"].iloc[-1]
+        latest_d = bars[f"STOCHd_{self.k_period}_{self.d_period}_3"].iloc[-1]
 
-        if (
-            latest_stoch_k > latest_stoch_d
-            and latest_stoch_k < 20
-            and current_position == 0
-        ):
-            message = f"Buy signal for {symbol} (Stochastic Oscillator)"
-            logging.info(message)
-            await self.telegram_service.send_message(message)
-            await manager.broadcast_json({"type": "log", "message": message})
-
-            account_info = await self.alpaca_service.get_account_info()
-            buying_power = float(account_info.buying_power)
-            last_price = bars["close"].iloc[-1]
-            qty = int((buying_power * self.trade_percentage) / last_price)
-
-            if qty > 0:
-                order = self.alpaca_service.submit_order(
-                    symbol=symbol,
-                    qty=qty,
-                    side="buy",
-                    type="market",
-                    time_in_force="gtc",
-                    order_class="bracket",
-                    take_profit={
-                        "limit_price": last_price * (1 + self.take_profit_pct)
-                    },
-                    stop_loss={"stop_price": last_price * (1 - self.stop_loss_pct)},
-                )
-                create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
-                self.google_sheets_service.export_trades()
-        elif (
-            latest_stoch_k < latest_stoch_d
-            and latest_stoch_k > 80
-            and current_position > 0
-        ):
-            message = f"Sell signal for {symbol} (Stochastic Oscillator)"
-            logging.info(message)
-            await self.telegram_service.send_message(message)
-            await manager.broadcast_json({"type": "log", "message": message})
-            order = self.alpaca_service.submit_order(
-                symbol, current_position, "sell", "market", "gtc"
-            )
-            create_trade(db, symbol, order.qty, order.filled_avg_price, order.side)
-            self.google_sheets_service.export_trades()
-        else:
-            message = (
-                f"No signal for {symbol} (Stochastic Oscillator) or already in position"
-            )
-            logging.info(message)
-            await manager.broadcast_json({"type": "log", "message": message})
+        if latest_k > self.overbought and latest_d > self.overbought:
+            logging.info(f"Sell signal for {symbol} (Stochastic Oscillator > {self.overbought})")
+        elif latest_k < self.oversold and latest_d < self.oversold:
+            logging.info(f"Buy signal for {symbol} (Stochastic Oscillator < {self.oversold})")

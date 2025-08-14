@@ -11,25 +11,26 @@ from sqlalchemy.orm import Session
 
 
 class AwesomeOscillatorStrategy(BaseStrategy):
+    name: str = "awesome_oscillator"
+    display_name: str = "Awesome Oscillator"
+    description: str = "An indicator used to measure market momentum. It is calculated as the difference between a 34-period and a 5-period simple moving average."
+
     def __init__(
         self,
-        alpaca_service,
-        telegram_service,
-        google_sheets_service,
+        *args,
         fast=5,
         slow=34,
         trade_percentage=0.05,
         take_profit_pct=0.05,
         stop_loss_pct=0.02,
+        **kwargs,
     ):
-        super().__init__(alpaca_service)
+        super().__init__(*args, **kwargs)
         self.fast = fast
         self.slow = slow
         self.trade_percentage = trade_percentage
         self.take_profit_pct = take_profit_pct
         self.stop_loss_pct = stop_loss_pct
-        self.telegram_service = telegram_service
-        self.google_sheets_service = google_sheets_service
 
     async def get_position(self, symbol: str) -> float:
         try:
@@ -43,7 +44,8 @@ class AwesomeOscillatorStrategy(BaseStrategy):
         pass
 
     async def run_on_trade(self, trade):
-        pass
+        symbol = trade.symbol
+        timeframe = "1Day"  # Assuming a default timeframe
         logging.info(f"Running Awesome Oscillator strategy for {symbol}")
 
         bars = self.alpaca_service.get_bars(symbol, timeframe, limit=self.slow + 5).df
