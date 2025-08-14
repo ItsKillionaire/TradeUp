@@ -30,5 +30,6 @@ export const trainAIModel = async (params: TrainParams): Promise<TrainResult> =>
     throw new Error(errorData.detail || 'Failed to train AI model');
   }
 
-  return response.json();
+  const responseData = await response.json();
+  return responseData.data;
 };

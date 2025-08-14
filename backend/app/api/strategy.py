@@ -47,7 +47,7 @@ async def stop_strategy(
 
 @router.get("/strategy/status")
 def get_strategy_status():
-    return {"status": "online"}
+    return {"message": "Strategy manager is online"}
 
 from app.strategies.base import get_strategy
 
@@ -61,9 +61,9 @@ def train_ai_strategy(symbol: str, start_date: str = None, end_date: str = None)
     if "error" in result:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=result["error"])
     
-    return result
+    return {"data": result}
 
 @router.get("/strategy/available")
 def get_available_strategies(request: Request):
     strategy_manager = request.app.state.strategy_manager
-    return {"strategies": strategy_manager.get_available_strategies()}
+    return {"data": {"strategies": strategy_manager.get_available_strategies()}}

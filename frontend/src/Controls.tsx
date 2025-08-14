@@ -14,7 +14,9 @@ interface StartStopResponse {
 }
 
 interface AvailableStrategiesResponse {
-    strategies: Strategy[];
+    data: {
+        strategies: Strategy[];
+    };
 }
 
 const Controls: React.FC = () => {
@@ -26,9 +28,9 @@ const Controls: React.FC = () => {
     useEffect(() => {
         axios.get<AvailableStrategiesResponse>('/api/strategy/available')
             .then((response) => {
-                setAvailableStrategies(response.data.strategies);
-                if (response.data.strategies.length > 0) {
-                    setStrategy(response.data.strategies[0].name);
+                setAvailableStrategies(response.data.data.strategies);
+                if (response.data.data.strategies.length > 0) {
+                    setStrategy(response.data.data.strategies[0].name);
                 }
             })
             .catch(error => {
