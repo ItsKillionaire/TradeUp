@@ -36,3 +36,18 @@ class BollingerBandsStrategy(BaseStrategy):
             logging.info(f"Buy signal for {symbol} (Bollinger Bands)")
         elif latest_close > upper_band:
             logging.info(f"Sell signal for {symbol} (Bollinger Bands)")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars.ta.bbands(length=self.length, std=self.std_dev, append=True)
+
+        lower_band_col = f"BBL_{self.length}_{self.std_dev:.1f}"
+        upper_band_col = f"BBU_{self.length}_{self.std_dev:.1f}"
+
+        bars["signal"] = 0
+        bars.loc[bars["close"] < bars[lower_band_col], "signal"] = 1
+        bars.loc[bars["close"] > bars[upper_band_col], "signal"] = -1
+
+        return bars

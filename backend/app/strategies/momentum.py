@@ -35,3 +35,15 @@ class MomentumStrategy(BaseStrategy):
             logging.info(f"Buy signal for {symbol} (Momentum)")
         elif latest_momentum < 0:
             logging.info(f"Sell signal for {symbol} (Momentum)")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars["momentum"] = bars["close"].diff(self.momentum_period)
+
+        bars["signal"] = 0
+        bars.loc[bars["momentum"] > 0, "signal"] = 1
+        bars.loc[bars["momentum"] < 0, "signal"] = -1
+
+        return bars

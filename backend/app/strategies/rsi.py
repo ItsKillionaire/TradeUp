@@ -37,3 +37,17 @@ class RsiStrategy(BaseStrategy):
             logging.info(f"Sell signal for {symbol} (RSI > {self.overbought})")
         elif latest_rsi < self.oversold:
             logging.info(f"Buy signal for {symbol} (RSI < {self.oversold})")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars.ta.rsi(length=self.period, append=True)
+
+        rsi_col = f"RSI_{self.period}"
+
+        bars["signal"] = 0
+        bars.loc[bars[rsi_col] < self.oversold, "signal"] = 1
+        bars.loc[bars[rsi_col] > self.overbought, "signal"] = -1
+
+        return bars

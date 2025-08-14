@@ -42,3 +42,20 @@ class MacdStrategy(BaseStrategy):
             logging.info(f"Buy signal for {symbol} (MACD)")
         elif latest_macd < latest_signal and previous_macd >= previous_signal:
             logging.info(f"Sell signal for {symbol} (MACD)")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars.ta.macd(
+            fast=self.fast, slow=self.slow, signal=self.signal, append=True
+        )
+
+        macd_col = f"MACD_{self.fast}_{self.slow}_{self.signal}"
+        signal_col = f"MACDs_{self.fast}_{self.slow}_{self.signal}"
+
+        bars["signal"] = 0
+        bars.loc[(bars[macd_col] > bars[signal_col]) & (bars[macd_col].shift(1) <= bars[signal_col].shift(1)), "signal"] = 1
+        bars.loc[(bars[macd_col] < bars[signal_col]) & (bars[macd_col].shift(1) >= bars[signal_col].shift(1)), "signal"] = -1
+
+        return bars

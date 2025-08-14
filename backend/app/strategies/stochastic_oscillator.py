@@ -41,3 +41,20 @@ class StochasticOscillatorStrategy(BaseStrategy):
             logging.info(f"Sell signal for {symbol} (Stochastic Oscillator > {self.overbought})")
         elif latest_k < self.oversold and latest_d < self.oversold:
             logging.info(f"Buy signal for {symbol} (Stochastic Oscillator < {self.oversold})")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars.ta.stoch(
+            k=self.k_period, d=self.d_period, append=True
+        )
+
+        k_col = f"STOCHk_{self.k_period}_{self.d_period}_3"
+        d_col = f"STOCHd_{self.k_period}_{self.d_period}_3"
+
+        bars["signal"] = 0
+        bars.loc[(bars[k_col] < self.oversold) & (bars[d_col] < self.oversold), "signal"] = 1
+        bars.loc[(bars[k_col] > self.overbought) & (bars[d_col] > self.overbought), "signal"] = -1
+
+        return bars

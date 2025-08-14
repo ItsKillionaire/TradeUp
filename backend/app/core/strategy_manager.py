@@ -37,7 +37,7 @@ class StrategyManager:
                         }
         return strategies
 
-    def get_strategy_instance(self, name: str, **kwargs) -> BaseStrategy:
+    def get_strategy_instance(self, name: str, symbol: str = None, **kwargs) -> BaseStrategy:
         strategy_info = self._strategy_classes.get(name)
         if not strategy_info:
             return None
@@ -48,6 +48,7 @@ class StrategyManager:
             self.risk_manager,
             self.telegram_service,
             self.google_sheets_service,
+            symbol=symbol,
             **kwargs,
         )
 

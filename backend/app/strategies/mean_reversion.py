@@ -39,3 +39,18 @@ class MeanReversionStrategy(BaseStrategy):
             logging.info(f"Buy signal for {symbol} (Mean Reversion)")
         elif latest_close > sma + (self.deviation_threshold * std_dev):
             logging.info(f"Sell signal for {symbol} (Mean Reversion)")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars.ta.sma(length=self.sma_period, append=True)
+        bars["std_dev"] = bars["close"].rolling(window=self.sma_period).std()
+
+        sma_col = f"SMA_{self.sma_period}"
+
+        bars["signal"] = 0
+        bars.loc[bars["close"] < bars[sma_col] - (self.deviation_threshold * bars["std_dev"]), "signal"] = 1
+        bars.loc[bars["close"] > bars[sma_col] + (self.deviation_threshold * bars["std_dev"]), "signal"] = -1
+
+        return bars

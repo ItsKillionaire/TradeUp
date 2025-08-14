@@ -32,7 +32,7 @@ async def start_strategy(
     strategy_manager = request.app.state.strategy_manager
     try:
         strategy_instance = strategy_manager.get_strategy_instance(
-            strategy_name, **strategy_params
+            strategy_name, symbol=symbol, **strategy_params
         )
         strategy_manager.active_strategies.append(strategy_instance)
         await strategy_manager.telegram_service.send_message(

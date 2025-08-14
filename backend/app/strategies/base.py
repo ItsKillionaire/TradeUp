@@ -15,13 +15,15 @@ class BaseStrategy(ABC):
         risk_manager: RiskManager,
         telegram_service,
         google_sheets_service,
+        symbol: str = None,
         **kwargs,
     ):
         self.alpaca_service = alpaca_service
         self.risk_manager = risk_manager
         self.telegram_service = telegram_service
         self.google_sheets_service = google_sheets_service
-        logging.info(f"{self.name} strategy initialized.")
+        self.symbol = symbol
+        logging.info(f"{self.name} strategy initialized for symbol {self.symbol}.")
 
     @abstractmethod
     async def run(self, symbol, timeframe, db_session):

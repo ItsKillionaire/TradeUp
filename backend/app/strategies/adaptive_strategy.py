@@ -19,3 +19,7 @@ class AdaptiveStrategy(BaseStrategy):
         logging.info(
             f"Running Adaptive Strategy for {trade.symbol}. (Placeholder for ML integration)"
         )
+
+    def generate_signals(self, bars):
+        # Placeholder for adaptive strategy signal generation
+        return bars

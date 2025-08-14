@@ -107,3 +107,22 @@ class AwesomeOscillatorStrategy(BaseStrategy):
             )
             logging.info(message)
             await manager.broadcast_json({"type": "log", "message": message})
+
+    def generate_signals(self, bars: pd.DataFrame) -> pd.DataFrame:
+        if bars.empty:
+            return bars
+
+        bars.ta.ao(fast=self.fast, slow=self.slow, append=True)
+
+        ao_col = f"AO_{self.fast}_{self.slow}"
+
+        # Generate buy/sell signals
+        bars["signal"] = 0
+        bars.loc[
+            (bars[ao_col] > 0) & (bars[ao_col].shift(1) < 0), "signal"
+        ] = 1  # Buy signal
+        bars.loc[
+            (bars[ao_col] < 0) & (bars[ao_col].shift(1) > 0), "signal"
+        ] = -1  # Sell signal
+
+        return bars

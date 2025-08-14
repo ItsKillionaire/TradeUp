@@ -33,3 +33,17 @@ class VwapStrategy(BaseStrategy):
             logging.info(f"Buy signal for {symbol} (VWAP)")
         elif latest_close < latest_vwap:
             logging.info(f"Sell signal for {symbol} (VWAP)")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars.ta.vwap(append=True)
+
+        vwap_col = "VWAP_D"
+
+        bars["signal"] = 0
+        bars.loc[bars["close"] > bars[vwap_col], "signal"] = 1
+        bars.loc[bars["close"] < bars[vwap_col], "signal"] = -1
+
+        return bars

@@ -41,3 +41,20 @@ class IchimokuCloudStrategy(BaseStrategy):
             logging.info(f"Buy signal for {symbol} (Ichimoku Cloud)")
         elif latest_close < span_a and latest_close < span_b:
             logging.info(f"Sell signal for {symbol} (Ichimoku Cloud)")
+
+    def generate_signals(self, bars):
+        if bars.empty:
+            return bars
+
+        bars.ta.ichimoku(
+            tenkan=self.tenkan, kijun=self.kijun, senkou=self.senkou, append=True
+        )
+
+        span_a_col = f"ISA_{self.tenkan}_{self.kijun}_{self.senkou}"
+        span_b_col = f"ISB_{self.kijun}_{self.senkou}"
+
+        bars["signal"] = 0
+        bars.loc[(bars["close"] > bars[span_a_col]) & (bars["close"] > bars[span_b_col]), "signal"] = 1
+        bars.loc[(bars["close"] < bars[span_a_col]) & (bars["close"] < bars[span_b_col]), "signal"] = -1
+
+        return bars
