@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Typography, Box, Grid, Paper } from '@mui/material';
+import { Typography, Box, Grid, Paper, styled } from '@mui/material';
 
 import Controls from './Controls';
 import { useStore, apiClient } from './store';
@@ -12,6 +12,14 @@ import MarketStatus from './MarketStatus';
 import AITrader from './AITrader';
 import Backtester from './Backtester';
 import packageJson from '../package.json';
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
+  boxShadow: theme.shadows[3],
+}));
 
 const Dashboard: React.FC = () => {
   const {
@@ -124,63 +132,49 @@ const Dashboard: React.FC = () => {
       </Typography>
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <StyledPaper>
             <MarketStatus />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <StyledPaper>
             <AccountInfo />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <StyledPaper>
             <Controls />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12} md={8}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-            }}
-          >
+          <StyledPaper>
             <OpenPositions />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-            }}
-          >
+          <StyledPaper>
             <Logs />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <StyledPaper>
             <RecentOrders />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <StyledPaper>
             <TradeHistory />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <StyledPaper>
             <AITrader />
-          </Paper>
+          </StyledPaper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <StyledPaper>
             <Backtester />
-          </Paper>
+          </StyledPaper>
         </Grid>
       </Grid>
       <Box sx={{ pt: 4, textAlign: 'center', color: 'text.secondary' }}>
